@@ -1,8 +1,6 @@
 # mjolnir-mode
 Whosoever holds this hammer, if he be worthy, shall possess the power of Thor.
 
-## About
-
 `mjolnir-mode` is an Emacs minor mode that bestows upon you the might of Thor!
 
 When wielding Mjölnir, nothing shall come in the way of your buffers as they thunder through your windows. Instead of moving over to the window holding the buffer worthy of your attention, summon it into the window you're already in. However, you deem not all buffers as worthy - let be them smitten under the might of Mjölnir - and they shall stay their ground. 
