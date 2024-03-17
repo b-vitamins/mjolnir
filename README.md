@@ -4,11 +4,14 @@ Whosoever holds this hammer, if he be worthy, shall possess the power of Thor.
 ## About
 
 `mjolnir-mode` is an Emacs minor mode that bestows upon you the might of Thor!
-When wielding Mjölnir, nothing shall come in the way of your buffers as they thunder through the windows. However, not all buffers are deemed worthy - the unworthy shall remain immobile, having collapsed under the weight of the mighty Mjölnir.
+
+When wielding Mjölnir, nothing shall come in the way of your buffers as they thunder through your windows. Instead of moving over to the window holding the buffer worthy of your attention, summon it into the window you're already in. However, you deem not all buffers as worthy - let be them smitten under the might of Mjölnir - and they shall stay their ground. 
+
+*May your windows be ever steadfast and your code mighty!* ⚡
 
 ## Installation
 
-First, clone this repository to your local machine and ensure that it's added to your Emacs `load-path`.
+Clone this repository and add it to your `load-path`.
 
 ```emacs-lisp
 (add-to-list 'load-path "/path/to/mjolnir-mode")
@@ -17,36 +20,36 @@ First, clone this repository to your local machine and ensure that it's added to
 
 ## Usage
 
-To wield the power of Mjölnir, enable `mjolnir-mode`:
+Enable `mjolnir-mode`:
 
 ```emacs-lisp
 (mjolnir-mode t)
 ```
 
-To journey all of the realms with it, enable `global-mjolnir-mode`:
+Now wield the power of Mjölnir wherever you are (`*`).
 
-```emacs-lisp
-(global-mjolnir-mode t)
-```
+Go this way (`M-n`):
 
-## Buffer Navigation Example
+`+----+---+    +----+---+    +----+---+    +----+---+`  
+`| A* | B |    | B* | C |    | C* | D |    | D* | A |`  
+`+----+---+ -> +----+---+ -> +----+---+ -> +----+---+`  
+`| D  | C |    | A  | D |    | B  | A |    | C  | B |`  
+`+----+---+    +----+---+    +----+---+    +----+---+`
 
-This way (`M-n`):
+Or that way (`M-p`):
 
-`+---+---+    +---+---+    +---+---+    +---+---+`  
-`| A | B | -> | B | C | -> | C | D | -> | D | A |`  
-`+---+---+    +---+---+    +---+---+    +---+---+`  
-`| D | C |    | A | D |    | B | A |    | C | B |`  
-`+---+---+    +---+---+    +---+---+    +---+---+`
+`+----+---+    +----+---+    +----+---+    +----+---+`  
+`| A* | B |    | D* | A |    | C* | D |    | B* | C |`  
+`+----+---+ -> +----+---+ -> +----+---+ -> +----+---+`  
+`| D  | C |    | C  | B |    | B  | A |    | A  | D |`  
+`+----+---+    +----+---+    +----+---+    +----+---+`
 
-That way (`M-p`):
+Make `X` unworthy (`C-c u`), then go this way (`M-n`):
 
-`+---+---+    +---+---+    +---+---+    +---+---+`  
-`| A | B | -> | D | A | -> | C | D | -> | B | C |`  
-`+---+---+    +---+---+    +---+---+    +---+---+`  
-`| D | C |    | C | B |    | B | A |    | A | D |`  
-`+---+---+    +---+---+    +---+---+    +---+---+`
+`+----+---+    +----+---+    +----+---+    +----+---+`  
+`| A* | B |    | B* | C |    | C* | A |    | A* | B |`  
+`+----+---+ -> +----+---+ -> +----+---+ -> +----+---+`  
+`| X  | C |    | X  | A |    | X  | B |    | X  | C |`  
+`+----+---+    +----+---+    +----+---+    +----+---+`
 
-Change your grip using `mjolnir-cycle-window-keys`.
-
-*May your windows be ever steadfast and your code mighty!* ⚡
+Change your grip using `mjolnir-cycle-window-forward-key`, `mjolnir-cycle-window-backward-key`, and `mjolnir-toggle-fixed-window-key`.
