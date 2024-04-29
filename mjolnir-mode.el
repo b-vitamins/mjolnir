@@ -199,15 +199,24 @@ Optionally FORCE-RECALCULATE the angle."
       (puthash window angle mjolnir-window-angle-cache)
       angle)))
 
+
+;; Borrowed with modification from Mickey Peterson <mickey@masteringemacs.org>
+;; Demystifying Emacs's Window Manager
+;; https://www.masteringemacs.org/article/demystifying-emacs-window-manager
+;;
 (defun mjolnir-toggle-fixed-window ()
   "Toggle current window's eligibility for buffer cycling."
   (interactive)
-  (if (memq (selected-window) mjolnir-fixed-windows)
-      (progn
-        (setq mjolnir-fixed-windows (delq (selected-window) mjolnir-fixed-windows))
-        (message "Window is now worthy."))
-    (add-to-list 'mjolnir-fixed-windows (selected-window))
-    (message "Window is now unworthy.")))
+	(let (sw (selected-window))
+		(if (memq sw mjolnir-fixed-windows)
+				(progn
+					(setq mjolnir-fixed-windows (delq (selected-window) mjolnir-fixed-windows))
+					(set-window-dedicated-p sw nil)
+					(message "Window is now worthy."))
+			(progn
+				(add-to-list 'mjolnir-fixed-windows sw)
+				(set-window-dedicated-p sw t))
+			(message "Window is now unworthy."))))
 
 ;;;###autoload
 (when (featurep 'mjolnir-mode)
