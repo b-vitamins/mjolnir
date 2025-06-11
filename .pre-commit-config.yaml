@@ -1,0 +1,14 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-added-large-files
+  - repo: local
+    hooks:
+      - id: elisp-byte-compile
+        name: elisp byte compile
+        entry: emacs --batch -Q -L . -f batch-byte-compile mjolnir.el
+        language: system
+        files: ^mjolnir\.el$
