@@ -1,228 +1,324 @@
-;;; mjolnir.el --- Whosoever holds this hammer, if he be worthy, shall possess the power of Thor -*- lexical-binding: t -*-
+;;; mjolnir.el --- Whosoever holds this hammer, if he be worthy, shall possess the power of Thor. -*- lexical-binding: t; -*-
 
-;; Author: B <b@example.com>
+;; Copyright (C) 2025 Ayan Das
+
+;; Author: Ayan Das <bvits@riseup.net>
+;; Maintainer: Ayan Das <bvits@riseup.net>
 ;; Version: 0.3.0
-;; Keywords: buffers, windows, lightning, power, Thor, Mjolnir
+;; Package-Requires: ((emacs "27.1"))
+;; Keywords: buffers, windows, convenience
 ;; URL: https://github.com/b-vitamins/mjolnir
-;; Package-Requires: ((emacs "25.1"))
+
+;; This file is NOT part of GNU Emacs.
+
+;; This program is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
-
+;;
 ;; `mjolnir-mode` is an Emacs minor mode that bestows upon you the might of Thor!
 ;;
 ;; When wielding Mjölnir, nothing shall come in the way of your buffers as they thunder through your windows.  Instead of moving over to the window holding the buffer worthy of your attention,  summon it into the window you're already in.  However, not all buffers you deem worthy - let be them smitten under the might of Mjölnir - and they shall stay their ground.
 ;;
 ;; *May your windows be ever steadfast and your code mighty!* ⚡
-
+;;
+;; Works with Emacs 25.1 and later. Full power unleashed with Emacs 29+!
 ;;; Installation:
-
 ;; Clone this repository and add it to your `load-path`.
 ;;
 ;; (add-to-list 'load-path "/path/to/mjolnir")
 ;; (require 'mjolnir)
-
 ;;; Usage:
-
 ;; Enable `mjolnir-mode`:
 ;; (mjolnir-mode t)
 ;;
 ;; Now wield the power of Mjölnir wherever you are (`*`).
 ;;
+;; ### Visible Realm
+;;
 ;; Go this way (`M-n`):
 ;;
-;; +----+---+    +----+---+    +----+---+    +----+---+
-;; | A* | B |    | B* | C |    | C* | D |    | D* | A |
-;; +----+---+ -> +----+---+ -> +----+---+ -> +----+---+
-;; | D  | C |    | A  | D |    | B  | A |    | C  | B |
-;; +----+---+    +----+---+    +----+---+    +----+---+
+;; +----+----+    +----+----+    +----+----+    +----+----+
+;; | A* | B  |    | B* | C  |    | C* | D  |    | D* | A  |
+;; +----+----+ -> +----+----+ -> +----+----+ -> +----+----+
+;; | D  | C  |    | A  | D  |    | B  | A  |    | C  | B  |
+;; +----+----+    +----+----+    +----+----+    +----+----+
 ;;
 ;; Or that way (`M-p`):
 ;;
-;; +----+---+    +----+---+    +----+---+    +----+---+
-;; | A* | B |    | D* | A |    | C* | D |    | B* | C |
-;; +----+---+ -> +----+---+ -> +----+---+ -> +----+---+
-;; | D  | C |    | C  | B |    | B  | A |    | A  | D |
-;; +----+---+    +----+---+    +----+---+    +----+---+
+;; +----+----+    +----+----+    +----+----+    +----+----+
+;; | A* | B  |    | D* | A  |    | C* | D  |    | B* | C  |
+;; +----+----+ -> +----+----+ -> +----+----+ -> +----+----+
+;; | D  | C  |    | C  | B  |    | B  | A  |    | A  | D  |
+;; +----+----+    +----+----+    +----+----+    +----+----+
 ;;
-;; Make `X` unworthy (`C-c u`), then go this way (`M-n`):
+;; Make `X` unworthy (`M-u`), then go this way (`M-n`):
 ;;
-;; +----+---+    +----+---+    +----+---+    +----+---+
-;; | A* | B |    | B* | C |    | C* | A |    | A* | B |
-;; +----+---+ -> +----+---+ -> +----+---+ -> +----+---+
-;; | X  | C |    | X  | A |    | X  | B |    | X  | C |
-;; +----+---+    +----+---+    +----+---+    +----+---+
+;; +----+----+    +----+----+    +----+----+    +----+----+
+;; | A* | B  |    | B* | C  |    | C* | A  |    | A* | B  |
+;; +----+----+ -> +----+----+ -> +----+----+ -> +----+----+
+;; | X  | C  |    | X  | A  |    | X  | B  |    | X  | C  |
+;; +----+----+    +----+----+    +----+----+    +----+----+
 ;;
-;; Change your grip using `mjolnir-cycle-window-forward-key`, `mjolnir-cycle-window-backward-key`, and `mjolnir-toggle-fixed-window-key`.
+;; ### Hidden Realm
+;;
+;; Summon this way (`M-N`):
+;;
+;; +----+----+    +----+----+    +----+----+    +----+----+
+;; | A* | B  |    | G* | B  |    | F* | B  |    | E* | B  |
+;; +----+----+ -> +----+----+ -> +----+----+ -> +----+----+
+;; | D  | C  |    | D  | C  |    | D  | C  |    | D  | C  |
+;; +----+----+    +----+----+    +----+----+    +----+----+
+;;   E  F  G        A  E  F        G  A  E        F  G  A
+;;
+;; Or summon that way (`M-P`):
+;;
+;; +----+----+    +----+----+    +----+----+    +----+----+
+;; | A* | B  |    | E* | B  |    | F* | B  |    | G* | B  |
+;; +----+----+ -> +----+----+ -> +----+----+ -> +----+----+
+;; | D  | C  |    | D  | C  |    | D  | C  |    | D  | C  |
+;; +----+----+    +----+----+    +----+----+    +----+----+
+;;   E  F  G        F  G  A        G  A  E        A  E  F
+;;
+;; Change your grip using `mjolnir-rotate-forward-key`, `mjolnir-rotate-backward-key`, `mjolnir-summon-next-key`, `mjolnir-summon-previous-key`, and `mjolnir-toggle-worthy-key`.
 
 ;;; Code:
 
-(require 'seq)
+(require 'cl-lib)
+
+;; Load core modules (byte-compiled but not separately installed)
+(let ((mjolnir-dir (file-name-directory (or load-file-name buffer-file-name))))
+  (add-to-list 'load-path (expand-file-name "core" mjolnir-dir))
+  (add-to-list 'load-path (expand-file-name "features" mjolnir-dir))
+  (add-to-list 'load-path (expand-file-name "ui" mjolnir-dir)))
+
+(require 'mjolnir-state)
+(require 'mjolnir-core)
+(require 'mjolnir-windows)
+(require 'mjolnir-buffers)
+
+;;; Custom Variables
 
 (defgroup mjolnir nil
-  "Customization group for mjolnir-mode."
+  "Lightning-fast buffer management with the power of Thor."
+  :group 'convenience
   :prefix "mjolnir-"
-  :group 'convenience)
+  :link '(url-link :tag "GitHub" "https://github.com/b-vitamins/mjolnir"))
 
-(defcustom mjolnir-fixed-modes '(treemacs-mode eldoc-mode)
-  "List of modes whose windows shall not cycle buffers, deemed unworthy of Mjölnir."
-  :type '(repeat symbol)
+(defun mjolnir--update-key (symbol value)
+  "Update keybinding for SYMBOL to VALUE.
+Used as custom setter for keybinding variables."
+  (mjolnir--define-key symbol value mjolnir-mode-map))
+
+(defcustom mjolnir-rotate-forward-key "M-n"
+  "Key binding for rotating buffers forward."
+  :type '(choice key-sequence string)
+  :set #'mjolnir--update-key
   :group 'mjolnir)
 
-(defcustom mjolnir-cycle-window-forward-key "M-n"
-  "Key binding for cycling the next buffer forward in the current window."
+(defcustom mjolnir-rotate-backward-key "M-p"
+  "Key binding for rotating buffers backward."
+  :type '(choice key-sequence string)
+  :set #'mjolnir--update-key
+  :group 'mjolnir)
+
+(defcustom mjolnir-summon-next-key "M-N"
+  "Key binding for summoning next hidden buffer."
+  :type '(choice key-sequence string)
+  :set #'mjolnir--update-key
+  :group 'mjolnir)
+
+(defcustom mjolnir-summon-previous-key "M-P"
+  "Key binding for summoning previous hidden buffer."
+  :type '(choice key-sequence string)
+  :set #'mjolnir--update-key
+  :group 'mjolnir)
+
+(defcustom mjolnir-toggle-worthy-key "M-u"
+  "Key binding for toggling window/buffer worthiness."
+  :type '(choice key-sequence string)
+  :set #'mjolnir--update-key
+  :group 'mjolnir)
+
+(defcustom mjolnir-invoke-key "M-o"
+  "Key binding for invoking transient interface."
+  :type '(choice key-sequence string)
+  :set #'mjolnir--update-key
+  :group 'mjolnir)
+
+(defcustom mjolnir-show-mode-line-indicator t
+  "Whether to show worthiness indicator in mode-line."
+  :type 'boolean
+  :set (lambda (sym val)
+         (set-default-toplevel-value sym val)
+         (when (boundp 'mjolnir-mode)
+           (force-mode-line-update t)))
+  :group 'mjolnir)
+
+(defcustom mjolnir-worthy-indicator " ⚡"
+  "Mode-line indicator for worthy windows."
   :type 'string
   :group 'mjolnir)
 
-(defcustom mjolnir-cycle-window-backward-key "M-p"
-  "Key binding for cycling the next buffer backward in the current window."
+(defcustom mjolnir-unworthy-indicator " ⚔"
+  "Mode-line indicator for unworthy windows."
   :type 'string
   :group 'mjolnir)
 
-(defcustom mjolnir-toggle-fixed-window-key "C-c u"
-  "Key binding for toggling current window's eligibility in mjolnir-mode."
-  :type 'string
-  :group 'mjolnir)
+;;; Mode Line
 
-(defvar mjolnir-mode-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map (kbd mjolnir-cycle-window-forward-key) 'mjolnir-cycle-window-forward)
-    (define-key map (kbd mjolnir-cycle-window-backward-key) 'mjolnir-cycle-window-backward)
-    (define-key map (kbd mjolnir-toggle-fixed-window-key) 'mjolnir-toggle-fixed-window)
-    map)
-  "Keymap for mjolnir-mode.")
+(defvar mjolnir--mode-line-format
+  '(:eval (mjolnir--mode-line-indicator))
+  "Mode line format for Mjolnir.")
 
-(defvar mjolnir-frame-center-cache nil
-  "Cache holding frame center coordinates to optimize window angle calculations.")
+(defun mjolnir--mode-line-indicator ()
+  "Generate mode line indicator for current window."
+  (when (and mjolnir-mode mjolnir-show-mode-line-indicator)
+    (let* ((worthy (mjolnir-worthy-p (selected-window)))
+           (indicator (if worthy
+                         mjolnir-worthy-indicator
+                       mjolnir-unworthy-indicator)))
+      ;; Fallback for undisplayable characters
+      (when (and (not worthy)
+                 (not (char-displayable-p (aref indicator 1))))
+        (setq indicator " ✖"))
+      (propertize indicator
+                  'face (if worthy 'success 'warning)
+                  'help-echo (if worthy
+                               "Window participates in rotation"
+                             "Window is fixed")))))
 
-(defvar mjolnir-sorted-windows-cache nil
-  "Cached list of sorted windows according to their angles from frame center.")
+;;; Keybinding Management
 
-(defvar mjolnir-window-angle-cache (make-hash-table :test 'equal)
-  "Cache storing window angles to optimize sorting.
-Keys are window objects; values are angles.")
+(defvar mjolnir-mode-map (make-sparse-keymap)
+  "Keymap for `mjolnir-mode'.")
 
-(defvar mjolnir-fixed-windows '()
-  "List of windows that are not subject to buffer cycling.")
+(defun mjolnir--define-key (symbol value map)
+  "Helper to update keybinding from SYMBOL to VALUE in MAP."
+  (let ((command (intern (replace-regexp-in-string
+                         "-key$" "" (symbol-name symbol)))))
+    (when (and (boundp symbol) 
+               (symbol-value symbol)
+               map)
+      (define-key map (kbd (symbol-value symbol)) nil))
+    (set-default-toplevel-value symbol value)
+    (when (and value map (fboundp command))
+      (define-key map (kbd value) command)))
+  value)
 
-(defvar mjolnir-mode-load-hook nil
-  "Hook run after the mjolnir package is loaded.")
+(defun mjolnir--setup-keybindings ()
+  "Initialize all keybindings."
+  (mjolnir--update-key 'mjolnir-rotate-forward-key mjolnir-rotate-forward-key)
+  (mjolnir--update-key 'mjolnir-rotate-backward-key mjolnir-rotate-backward-key)
+  (mjolnir--update-key 'mjolnir-summon-next-key mjolnir-summon-next-key)
+  (mjolnir--update-key 'mjolnir-summon-previous-key mjolnir-summon-previous-key)
+  (mjolnir--update-key 'mjolnir-toggle-worthy-key mjolnir-toggle-worthy-key)
+  (mjolnir--update-key 'mjolnir-invoke-key mjolnir-invoke-key))
+
+;;; Public Commands
+
+;;;###autoload
+(defun mjolnir-invoke (&optional arg)
+  "Invoke Mjolnir with prefix ARG.
+No prefix: show transient/help
+C-u: rotate backward  
+C-u C-u: summon previous
+Negative: rotate/summon backward N times"
+  (interactive "P")
+  (cond
+   ((not arg) 
+    (if (mjolnir-has-feature-p 'transient)
+        (mjolnir-transient)
+      (mjolnir-describe-bindings)))
+   ((equal arg '(4)) 
+    (mjolnir-rotate-backward))
+   ((equal arg '(16)) 
+    (mjolnir-summon-previous))
+   ((< (prefix-numeric-value arg) 0)
+    (if (eq last-command 'mjolnir-summon-next)
+        (mjolnir-summon-previous (abs (prefix-numeric-value arg)))
+      (mjolnir-rotate-backward (abs (prefix-numeric-value arg)))))
+   (t 
+    (if (eq last-command 'mjolnir-summon-next)
+        (mjolnir-summon-next (prefix-numeric-value arg))
+      (mjolnir-rotate-forward (prefix-numeric-value arg))))))
+
+;;;###autoload
+(defun mjolnir-toggle-worthy ()
+  "Toggle current window and buffer worthiness."
+  (interactive)
+  (mjolnir-toggle-window-worthy)
+  (mjolnir-toggle-buffer-worthy))
+
+;;;###autoload
+(defun mjolnir-describe-bindings ()
+  "Describe Mjolnir key bindings."
+  (interactive)
+  (with-help-window (help-buffer)
+    (princ "Mjolnir - Lightning-fast buffer control\n\n")
+    (princ "Visible Realm (Rotation):\n")
+    (princ (format "  %s - Rotate forward\n" mjolnir-rotate-forward-key))
+    (princ (format "  %s - Rotate backward\n" mjolnir-rotate-backward-key))
+    (princ "\nHidden Realm (Summoning):\n")
+    (princ (format "  %s - Summon next\n" mjolnir-summon-next-key))
+    (princ (format "  %s - Summon previous\n" mjolnir-summon-previous-key))
+    (princ "\nControl:\n")
+    (princ (format "  %s - Toggle worthy\n" mjolnir-toggle-worthy-key))
+    (princ (format "  %s - Show menu\n" mjolnir-invoke-key))))
+
+;;; Main Mode
 
 ;;;###autoload
 (define-minor-mode mjolnir-mode
-  "Toggle mjolnir-mode globally.
-Enables dynamic buffer cycling across windows,
-with specific windows designated as `unworthy' remaining static."
-  :lighter " Mjölnir"
+  "Lightning-fast buffer management with the power of Thor.
+\\{mjolnir-mode-map}"
   :global t
+  :lighter " Mjolnir"
   :keymap mjolnir-mode-map
   (if mjolnir-mode
       (progn
-        (add-hook 'window-configuration-change-hook 'mjolnir-clear-cache)
-        (message "Mjölnir mode enabled globally."))
-    (progn (remove-hook 'window-configuration-change-hook 'mjolnir-clear-cache)
-           (message "Mjölnir mode disabled globally."))))
+        ;; Setup
+        (mjolnir--setup-keybindings)
+        (mjolnir--state-setup)
+        ;; Mode line
+        (unless (member mjolnir--mode-line-format mode-line-format)
+          (setq-default mode-line-format 
+                       (append mode-line-format (list mjolnir--mode-line-format))))
+        (force-mode-line-update t)
+        ;; Load optional features
+        (when (mjolnir-has-feature-p 'transient)
+          (require 'mjolnir-transient nil t))
+        (message "⚡ Mjolnir mode enabled! The power of Thor is yours!"))
+    ;; Teardown
+    (mjolnir--state-teardown)
+    (mjolnir--clear-display)
+    ;; Mode line
+    (setq-default mode-line-format
+                 (delete mjolnir--mode-line-format mode-line-format))
+    (force-mode-line-update t)
+    (message "Mjolnir mode disabled. The hammer rests.")))
 
-(defun mjolnir-cycle-window-forward ()
-  "Cycle the next buffer forward in the current window."
-  (interactive)
-  (mjolnir-cycle-windows 'forward))
+;; Feature detection moved here from mjolnir-display.el
+(defconst mjolnir-features
+  '((posframe . (featurep 'posframe))
+    (child-frame . (>= emacs-major-version 26))
+    (transient . (featurep 'transient))
+    (project . (fboundp 'project-current)))
+  "Available features for conditional functionality.")
 
-(defun mjolnir-cycle-window-backward ()
-  "Cycle the next buffer backward in the current window."
-  (interactive)
-  (mjolnir-cycle-windows 'backward))
-
-(defun mjolnir-cycle-windows (direction)
-  "Cycle buffers in visible windows in DIRECTION."
-  (interactive)
-  (unless (member direction '(forward backward))
-    (user-error "Invalid cycling direction: %s" direction))
-  (let* ((windows (delq nil (mapcar
-                             (lambda (w)
-                               (unless (or (member w mjolnir-fixed-windows)
-                                           (member (buffer-local-value
-                                                    'major-mode (window-buffer w))
-                                                   mjolnir-fixed-modes))
-                                 w))
-                             (window-list))))
-         (sorted-windows (mjolnir-sort-windows))
-         (eligible-windows (seq-filter (lambda (w) (member w windows)) sorted-windows))
-         (buffers (mapcar 'window-buffer eligible-windows))
-         (num-windows (length eligible-windows))
-         (offset (if (eq direction 'forward) -1 1)))
-    (when (> num-windows 1)
-      (dotimes (i num-windows)
-        (let ((target-index (mod (+ i offset) num-windows)))
-          (set-window-buffer (nth i eligible-windows)
-                             (nth target-index buffers)))))))
-
-(defun mjolnir-clear-cache ()
-  "Clear all mjolnir caches.
-Call this function on window configuration changes."
-  (interactive)
-  (clrhash mjolnir-window-angle-cache)
-  (setq mjolnir-sorted-windows-cache nil))
-
-(defun mjolnir-window-changed-p (window)
-  "Check if WINDOW's geometry has changed since last caching."
-  (let ((last-recorded (gethash window mjolnir-window-angle-cache))
-        (current-angle (mjolnir-calculate-window-angle window t)))
-    (not (equal last-recorded current-angle))))
-
-(defun mjolnir-update-frame-center-cache (frame)
-  "Update FRAME center coordinates cache."
-  (setq mjolnir-frame-center-cache
-        (cons (/ (frame-pixel-width frame) 2.0)
-              (/ (frame-pixel-height frame) 2.0))))
-
-(defun mjolnir-sort-windows ()
-  "Sort windows and update cache if necessary."
-  (unless mjolnir-sorted-windows-cache
-    (setq mjolnir-sorted-windows-cache
-          (sort (window-list) (lambda (a b)
-                                (< (mjolnir-calculate-window-angle a)
-                                   (mjolnir-calculate-window-angle b))))))
-  mjolnir-sorted-windows-cache)
-
-(defun mjolnir-calculate-window-angle (window &optional force-recalculate)
-  "Return the angle from FRAME's center to WINDOW's center.
-Optionally FORCE-RECALCULATE the angle."
-  (unless (eq (window-frame window) (car mjolnir-frame-center-cache))
-    (mjolnir-update-frame-center-cache (window-frame window)))
-  (if (and (not force-recalculate) (gethash window mjolnir-window-angle-cache))
-      (gethash window mjolnir-window-angle-cache)
-    (let* ((edges (window-edges window nil nil t))
-           (center (cons (/ (+ (nth 0 edges) (nth 2 edges)) 2.0)
-                         (/ (+ (nth 1 edges) (nth 3 edges)) 2.0)))
-           (dx (- (car center) (car mjolnir-frame-center-cache)))
-           (dy (- (cdr mjolnir-frame-center-cache) (cdr center)))
-           (angle (atan dy dx)))
-      (puthash window angle mjolnir-window-angle-cache)
-      angle)))
-
-
-;; Borrowed with modification from Mickey Peterson <mickey@masteringemacs.org>
-;; Demystifying Emacs's Window Manager
-;; https://www.masteringemacs.org/article/demystifying-emacs-window-manager
-;;
-(defun mjolnir-toggle-fixed-window ()
-  "Toggle current window's eligibility for buffer cycling."
-  (interactive)
-  (let ((sw (selected-window)))
-    (if (memq sw mjolnir-fixed-windows)
-        (progn
-          (setq mjolnir-fixed-windows (delq (selected-window) mjolnir-fixed-windows))
-          (set-window-dedicated-p sw nil)
-          (message "Window is now worthy."))
-      (progn
-        (add-to-list 'mjolnir-fixed-windows sw)
-        (set-window-dedicated-p sw t)
-        (message "Window is now unworthy.")))))
-
-;;;###autoload
-(when (featurep 'mjolnir)
-  (run-hooks 'mjolnir-mode-load-hook))
+(defun mjolnir-has-feature-p (feature)
+  "Check if FEATURE is available."
+  (eval (alist-get feature mjolnir-features)))
 
 (provide 'mjolnir)
-
 ;;; mjolnir.el ends here

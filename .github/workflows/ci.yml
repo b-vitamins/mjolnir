@@ -1,0 +1,116 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  schedule:
+    # Run weekly to catch any bitrot
+    - cron: '0 0 * * 0'
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        emacs_version: [27.1, 27.2, 28.1, 28.2, 29.1, 29.2, 29.3, 29.4, snapshot]
+        include:
+          # Test with native comp
+          - os: ubuntu-latest
+            emacs_version: 29.4
+            native_comp: true
+    steps:
+    - uses: actions/checkout@v4
+    
+    - uses: purcell/setup-emacs@master
+      with:
+        version: ${{ matrix.emacs_version }}
+    
+    - name: Install dependencies
+      run: |
+        emacs -Q --batch \
+          --eval "(require 'package)" \
+          --eval "(add-to-list 'package-archives '(\"melpa\" . \"https://melpa.org/packages/\"))" \
+          --eval "(package-refresh-contents)" \
+          --eval "(package-install 'transient)" \
+          --eval "(package-install 'package-lint)" \
+          --eval "(package-install 'elisp-lint)"
+    
+    # Strict byte compilation
+    - name: Byte compile (strict)
+      run: make compile-strict
+    
+    # Run all tests with coverage
+    - name: Run tests with coverage
+      run: make test-coverage
+      
+    # Run stress tests
+    - name: Run stress tests
+      run: make test-stress
+      timeout-minutes: 10
+    
+    # Memory leak detection (Linux only)
+    - name: Check for memory leaks
+      if: matrix.os == 'ubuntu-latest'
+      run: make test-memory
+    
+    # Performance regression tests
+    - name: Performance tests
+      run: make test-performance
+    
+    # Test without optional dependencies
+    - name: Test minimal configuration
+      run: make test-minimal
+    
+    # Upload coverage
+    - name: Upload coverage
+      if: matrix.os == 'ubuntu-latest' && matrix.emacs_version == '29.4'
+      uses: codecov/codecov-action@v3
+      with:
+        files: ./coverage.json
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - uses: purcell/setup-emacs@master
+      with:
+        version: 29.4
+    
+    - name: Install linters
+      run: |
+        emacs -Q --batch \
+          --eval "(require 'package)" \
+          --eval "(add-to-list 'package-archives '(\"melpa\" . \"https://melpa.org/packages/\"))" \
+          --eval "(package-refresh-contents)" \
+          --eval "(package-install 'package-lint)" \
+          --eval "(package-install 'elisp-lint)" \
+          --eval "(package-install 'relint)"
+    
+    - name: Run all linters
+      run: make lint-all
+    
+    - name: Check documentation
+      run: make check-doc
+    
+    - name: Verify package format
+      run: make verify-package
+
+  integration:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        config: [vanilla, doom, spacemacs, prelude]
+    steps:
+    - uses: actions/checkout@v4
+    
+    - uses: purcell/setup-emacs@master
+      with:
+        version: 29.4
+    
+    - name: Test with ${{ matrix.config }} configuration
+      run: make test-integration-${{ matrix.config }}
