@@ -107,6 +107,11 @@
 (require 'mjolnir-windows)
 (require 'mjolnir-buffers)
 
+;;; Keymap
+
+(defvar mjolnir-mode-map (make-sparse-keymap)
+  "Keymap for `mjolnir-mode'.")
+
 ;;; Custom Variables
 
 (defgroup mjolnir nil
@@ -199,9 +204,6 @@ Used as custom setter for keybinding variables."
                              "Window is fixed")))))
 
 ;;; Keybinding Management
-
-(defvar mjolnir-mode-map (make-sparse-keymap)
-  "Keymap for `mjolnir-mode'.")
 
 (defun mjolnir--define-key (symbol value map)
   "Helper to update keybinding from SYMBOL to VALUE in MAP."
