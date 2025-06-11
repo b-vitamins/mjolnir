@@ -4,7 +4,7 @@
 
 ;; Author: Ayan Das <bvits@riseup.net>
 ;; Maintainer: Ayan Das <bvits@riseup.net>
-;; Version: 0.3.0
+;; Version: 0.4.0-rc1
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: buffers, windows, convenience
 ;; URL: https://github.com/b-vitamins/mjolnir
