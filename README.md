@@ -1,4 +1,4 @@
-# mjolnir-mode
+# mjolnir
 Whosoever holds this hammer, if he be worthy, shall possess the power of Thor.
 
 `mjolnir-mode` is an Emacs minor mode that bestows upon you the might of Thor!
@@ -8,18 +8,14 @@ When wielding Mjölnir, nothing shall come in the way of your buffers as they th
 *May your windows be ever steadfast and your code mighty!* ⚡
 
 ## Installation
-
 Clone this repository and add it to your `load-path`.
-
 ```emacs-lisp
-(add-to-list 'load-path "/path/to/mjolnir-mode")
-(require 'mjolnir-mode)
+(add-to-list 'load-path "/path/to/mjolnir")
+(require 'mjolnir)
 ```
 
 ## Usage
-
 Enable `mjolnir-mode`:
-
 ```emacs-lisp
 (mjolnir-mode t)
 ```

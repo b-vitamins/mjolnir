@@ -1,9 +1,10 @@
-;;; mjolnir-mode.el --- Whosoever holds this hammer, if he be worthy, shall possess the power of Thor.
+;;; mjolnir.el --- Whosoever holds this hammer, if he be worthy, shall possess the power of Thor -*- lexical-binding: t -*-
 
-;; Author: B and ChatGPT
-;; Version: 0.2.0
+;; Author: B <b@example.com>
+;; Version: 0.3.0
 ;; Keywords: buffers, windows, lightning, power, Thor, Mjolnir
-;; URL: https://github.com/b-vitamins/mjolnir-mode
+;; URL: https://github.com/b-vitamins/mjolnir
+;; Package-Requires: ((emacs "25.1"))
 
 ;;; Commentary:
 
@@ -17,8 +18,8 @@
 
 ;; Clone this repository and add it to your `load-path`.
 ;;
-;; (add-to-list 'load-path "/path/to/mjolnir-mode")
-;; (require 'mjolnir-mode)
+;; (add-to-list 'load-path "/path/to/mjolnir")
+;; (require 'mjolnir)
 
 ;;; Usage:
 
@@ -104,7 +105,7 @@ Keys are window objects; values are angles.")
   "List of windows that are not subject to buffer cycling.")
 
 (defvar mjolnir-mode-load-hook nil
-  "Hook run after the mjolnir-mode package is loaded.")
+  "Hook run after the mjolnir package is loaded.")
 
 ;;;###autoload
 (define-minor-mode mjolnir-mode
@@ -207,20 +208,21 @@ Optionally FORCE-RECALCULATE the angle."
 (defun mjolnir-toggle-fixed-window ()
   "Toggle current window's eligibility for buffer cycling."
   (interactive)
-	(let (sw (selected-window))
-		(if (memq sw mjolnir-fixed-windows)
-				(progn
-					(setq mjolnir-fixed-windows (delq (selected-window) mjolnir-fixed-windows))
-					(set-window-dedicated-p sw nil)
-					(message "Window is now worthy."))
-			(progn
-				(add-to-list 'mjolnir-fixed-windows sw)
-				(set-window-dedicated-p sw t))
-			(message "Window is now unworthy."))))
+  (let ((sw (selected-window)))
+    (if (memq sw mjolnir-fixed-windows)
+        (progn
+          (setq mjolnir-fixed-windows (delq (selected-window) mjolnir-fixed-windows))
+          (set-window-dedicated-p sw nil)
+          (message "Window is now worthy."))
+      (progn
+        (add-to-list 'mjolnir-fixed-windows sw)
+        (set-window-dedicated-p sw t)
+        (message "Window is now unworthy.")))))
 
 ;;;###autoload
-(when (featurep 'mjolnir-mode)
+(when (featurep 'mjolnir)
   (run-hooks 'mjolnir-mode-load-hook))
 
-(provide 'mjolnir-mode)
-;;; mjolnir-mode.el ends here
+(provide 'mjolnir)
+
+;;; mjolnir.el ends here
