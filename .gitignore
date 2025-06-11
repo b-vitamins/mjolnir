@@ -1,11 +1,55 @@
 # Compiled
 *.elc
+*/*.elc
 
 # Packaging
 .cask
+dist/
+*.tar
 
 # Backup files
 *~
+\#*\#
+.\#*
 
 # Undo-tree save-files
 *.~undo-tree
+
+# Auto-save files
+auto-save-list
+.auto-saves-*
+
+# Lock files
+.*.lock
+package-lock.json
+
+# Test artifacts
+/test-results/
+/coverage/
+coverage.json
+.coverage
+
+# CI artifacts
+*.log
+/build/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor directories
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Emacs
+.dir-locals.el
+.projectile
+TAGS
+tags
+
+# Development
+/sandbox/
+/tmp/
