@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Report issues with the RC at: https://github.com/b-vitamins/mjolnir/issues
 ### Fixed
 - Byte compilation error when loading due to early use of `mjolnir-mode-map`
+  and `mjolnir--define-key`
 
 ## [0.4.0-rc1] - 2025-06-11
 ### ⚠️ Release Candidate
