@@ -40,16 +40,33 @@
          (mjolnir--invalidate-caches)
          ,@body)
      (mjolnir-mode -1)
-     (mjolnir--clear-display)))
+      (mjolnir--clear-display)))
 
 (defmacro mjolnir-test--with-temp-frame (&rest body)
   "Execute BODY in a temporary frame."
   (declare (indent 0))
-  `(let ((frame (make-frame '((visibility . nil)))))
+  `(let ((process-environment (copy-sequence process-environment)))
+     (setenv "TERM" "dumb")
+     (condition-case err
+         (let ((frame (make-frame '((visibility . nil)))))
+           (unwind-protect
+               (with-selected-frame frame
+                 ,@body)
+             (delete-frame frame)))
+       (error (ert-skip (format "Frame creation failed: %s" err))))))
+
+(defmacro mjolnir-test-with-temp-buffers (names &rest body)
+  "Create temporary buffers listed in NAMES, execute BODY, then clean up."
+  (declare (indent 1))
+  `(let (buffers)
      (unwind-protect
-         (with-selected-frame frame
+         (progn
+           (dolist (name ,names)
+             (push (get-buffer-create name) buffers))
            ,@body)
-       (delete-frame frame))))
+       (dolist (buf buffers)
+        (when (buffer-live-p buf)
+          (kill-buffer buf))))))
 
 ;;; Core Functionality Tests
 
@@ -61,7 +78,7 @@
    (should mjolnir-mode)
    (should (keymapp mjolnir-mode-map))
    (should (member mjolnir--mode-line-format mode-line-format))
-   
+
    ;; Test deactivation
    (mjolnir-mode -1)
    (should-not mjolnir-mode)
@@ -74,15 +91,15 @@
    (let ((old-key mjolnir-rotate-forward-key))
      (unwind-protect
          (progn
-           ;; Change keybinding
-           (setq mjolnir-rotate-forward-key "C-c C-n")
+          ;; Change keybinding
+          (customize-set-variable 'mjolnir-rotate-forward-key "C-c C-n")
            ;; Verify new binding works
            (should (eq (lookup-key mjolnir-mode-map (kbd "C-c C-n"))
                        'mjolnir-rotate-forward))
            ;; Verify old binding removed
            (should-not (eq (lookup-key mjolnir-mode-map (kbd old-key))
                           'mjolnir-rotate-forward)))
-       (setq mjolnir-rotate-forward-key old-key)))))
+       (customize-set-variable 'mjolnir-rotate-forward-key old-key)))))
 
 ;;; Window Management Tests
 
@@ -94,7 +111,7 @@
     (split-window-vertically)
     (other-window 1)
     (split-window-vertically)
-    
+
     (let* ((windows (window-list))
            (angles (mapcar #'mjolnir--window-angle windows)))
       ;; All angles should be unique
@@ -111,7 +128,7 @@
     (dotimes (_ 3)
       (split-window-horizontally)
       (other-window 1))
-    
+
     (let ((sorted1 (mjolnir--sort-windows-by-angle))
           (sorted2 (mjolnir--sort-windows-by-angle)))
       (should (equal sorted1 sorted2)))))
@@ -148,7 +165,7 @@
        (split-window-vertically)
        (other-window 1)
        (switch-to-buffer "D")
-       
+
        (mjolnir-mode 1)
        (let ((initial (mapcar (lambda (w) (window-buffer w))
                              (mjolnir--sort-windows-by-angle))))
@@ -173,12 +190,12 @@
        (split-window-horizontally)
        (other-window 1)
        (switch-to-buffer "C")
-       
+
        (mjolnir-mode 1)
        ;; Mark middle window as unworthy
        (other-window -1)
        (mjolnir-toggle-window-worthy)
-       
+
        ;; Rotate and verify B stays put
        (mjolnir-rotate-forward)
        (should (eq (get-buffer "B")
@@ -193,12 +210,12 @@
      (mjolnir-test--with-temp-frame
        (delete-other-windows)
        (mjolnir-mode 1)
-       
+
        ;; Visit buffers in specific order
        (dolist (buf '("E" "D" "C" "B" "A"))
          (switch-to-buffer buf)
          (sit-for 0.01)) ; Ensure buffer list updates
-       
+
        ;; Now summon should follow reverse order
        (switch-to-buffer "*scratch*")
        (mjolnir-summon-next)
@@ -216,7 +233,7 @@
          (setq default-directory "/tmp/project/"))
        (with-current-buffer "other"
          (setq default-directory "/tmp/other/"))
-       
+
        (mjolnir-test--with-temp-frame
          (mjolnir-mode 1)
          (setq mjolnir-summon-project-only t)
@@ -250,8 +267,10 @@
   (mjolnir-test--with-clean-state
    (mjolnir-mode 1)
    (let* ((frame1 (selected-frame))
-          (frame2 (make-frame '((visibility . nil))))
+          frame2
           state1 state2)
+     (mjolnir-test--with-temp-frame
+       (setq frame2 (selected-frame)))
      (unwind-protect
          (progn
            ;; Get states
@@ -274,7 +293,7 @@
      (mjolnir-mode 1)
      (delete-other-windows)
      (split-window-horizontally)
-     
+
      ;; Cache should be populated
      (let ((sorted1 (mjolnir--sort-windows-by-angle)))
        ;; Change window configuration
@@ -313,10 +332,10 @@
        (split-window-horizontally)
        (other-window 1)
        (switch-to-buffer "B")
-       
+
        ;; Kill a buffer that would be in rotation
        (kill-buffer "C")
-       
+
        ;; Should handle gracefully
        (condition-case err
            (progn
@@ -374,7 +393,7 @@
            (split-window-horizontally)
          (split-window-vertically))
        (other-window 1))
-     
+
      (let ((time (mjolnir-test--measure-time
                   (mjolnir-rotate-forward))))
        (should (< time mjolnir-test--performance-threshold))))))

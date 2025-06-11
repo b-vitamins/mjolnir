@@ -97,10 +97,14 @@
 (require 'cl-lib)
 
 ;; Load core modules (byte-compiled but not separately installed)
-(let ((mjolnir-dir (file-name-directory (or load-file-name buffer-file-name))))
-  (add-to-list 'load-path (expand-file-name "core" mjolnir-dir))
-  (add-to-list 'load-path (expand-file-name "features" mjolnir-dir))
-  (add-to-list 'load-path (expand-file-name "ui" mjolnir-dir)))
+(eval-and-compile
+  (let ((mjolnir-dir (file-name-directory
+                      (or load-file-name
+                          byte-compile-current-file
+                          buffer-file-name))))
+    (add-to-list 'load-path (expand-file-name "core" mjolnir-dir))
+    (add-to-list 'load-path (expand-file-name "features" mjolnir-dir))
+    (add-to-list 'load-path (expand-file-name "ui" mjolnir-dir))))
 
 (require 'mjolnir-state)
 (require 'mjolnir-core)
