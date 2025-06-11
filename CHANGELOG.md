@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Notes
 - v0.4.0 final release pending CI stabilization and testing feedback
 - Report issues with the RC at: https://github.com/b-vitamins/mjolnir/issues
+### Added
+- Helper macros for tests to create temporary buffers and handle frame failures
+### Fixed
+- Byte compilation error when loading due to early use of `mjolnir-mode-map`
+  and `mjolnir--define-key`
+- Test suite no longer fails when terminal frames cannot be created
 
 ## [0.4.0-rc1] - 2025-06-11
 ### ⚠️ Release Candidate
@@ -65,7 +71,7 @@ The API is stable, but implementation details may change based on testing feedba
 
 ### Performance
 - Smart caching system for window angles
-- Frame-local buffer visibility tracking  
+- Frame-local buffer visibility tracking
 - Lazy evaluation and cache invalidation
 - Reduced memory allocation through state reuse
 - Sub-linear scaling with window count

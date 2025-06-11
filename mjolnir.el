@@ -97,15 +97,37 @@
 (require 'cl-lib)
 
 ;; Load core modules (byte-compiled but not separately installed)
-(let ((mjolnir-dir (file-name-directory (or load-file-name buffer-file-name))))
-  (add-to-list 'load-path (expand-file-name "core" mjolnir-dir))
-  (add-to-list 'load-path (expand-file-name "features" mjolnir-dir))
-  (add-to-list 'load-path (expand-file-name "ui" mjolnir-dir)))
+(eval-and-compile
+  (let ((mjolnir-dir (file-name-directory
+                      (or load-file-name
+                          byte-compile-current-file
+                          buffer-file-name))))
+    (add-to-list 'load-path (expand-file-name "core" mjolnir-dir))
+    (add-to-list 'load-path (expand-file-name "features" mjolnir-dir))
+    (add-to-list 'load-path (expand-file-name "ui" mjolnir-dir))))
 
 (require 'mjolnir-state)
 (require 'mjolnir-core)
 (require 'mjolnir-windows)
 (require 'mjolnir-buffers)
+
+;;; Keymap
+
+(defvar mjolnir-mode-map (make-sparse-keymap)
+  "Keymap for `mjolnir-mode'.")
+
+(defun mjolnir--define-key (symbol value map)
+  "Helper to update keybinding from SYMBOL to VALUE in MAP."
+  (let ((command (intern (replace-regexp-in-string
+                         "-key$" "" (symbol-name symbol)))))
+    (when (and (boundp symbol)
+               (symbol-value symbol)
+               map)
+      (define-key map (kbd (symbol-value symbol)) nil))
+    (set-default-toplevel-value symbol value)
+    (when (and value map (fboundp command))
+      (define-key map (kbd value) command)))
+  value)
 
 ;;; Custom Variables
 
@@ -200,22 +222,6 @@ Used as custom setter for keybinding variables."
 
 ;;; Keybinding Management
 
-(defvar mjolnir-mode-map (make-sparse-keymap)
-  "Keymap for `mjolnir-mode'.")
-
-(defun mjolnir--define-key (symbol value map)
-  "Helper to update keybinding from SYMBOL to VALUE in MAP."
-  (let ((command (intern (replace-regexp-in-string
-                         "-key$" "" (symbol-name symbol)))))
-    (when (and (boundp symbol) 
-               (symbol-value symbol)
-               map)
-      (define-key map (kbd (symbol-value symbol)) nil))
-    (set-default-toplevel-value symbol value)
-    (when (and value map (fboundp command))
-      (define-key map (kbd value) command)))
-  value)
-
 (defun mjolnir--setup-keybindings ()
   "Initialize all keybindings."
   (mjolnir--update-key 'mjolnir-rotate-forward-key mjolnir-rotate-forward-key)
@@ -231,24 +237,24 @@ Used as custom setter for keybinding variables."
 (defun mjolnir-invoke (&optional arg)
   "Invoke Mjolnir with prefix ARG.
 No prefix: show transient/help
-C-u: rotate backward  
+C-u: rotate backward
 C-u C-u: summon previous
 Negative: rotate/summon backward N times"
   (interactive "P")
   (cond
-   ((not arg) 
+   ((not arg)
     (if (mjolnir-has-feature-p 'transient)
         (mjolnir-transient)
       (mjolnir-describe-bindings)))
-   ((equal arg '(4)) 
+   ((equal arg '(4))
     (mjolnir-rotate-backward))
-   ((equal arg '(16)) 
+   ((equal arg '(16))
     (mjolnir-summon-previous))
    ((< (prefix-numeric-value arg) 0)
     (if (eq last-command 'mjolnir-summon-next)
         (mjolnir-summon-previous (abs (prefix-numeric-value arg)))
       (mjolnir-rotate-backward (abs (prefix-numeric-value arg)))))
-   (t 
+   (t
     (if (eq last-command 'mjolnir-summon-next)
         (mjolnir-summon-next (prefix-numeric-value arg))
       (mjolnir-rotate-forward (prefix-numeric-value arg))))))
@@ -292,7 +298,7 @@ Negative: rotate/summon backward N times"
         (mjolnir--state-setup)
         ;; Mode line
         (unless (member mjolnir--mode-line-format mode-line-format)
-          (setq-default mode-line-format 
+          (setq-default mode-line-format
                        (append mode-line-format (list mjolnir--mode-line-format))))
         (force-mode-line-update t)
         ;; Load optional features
