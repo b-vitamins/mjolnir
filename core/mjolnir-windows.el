@@ -53,6 +53,8 @@ With prefix ARG, rotate that many positions."
          (worthy (seq-filter #'mjolnir-worthy-p windows)))
     (mjolnir--display
      (list :action 'preview
+           :current-window (selected-window)
+           :origin-window (selected-window)
            :windows worthy))))
 
 ;;; Internal Implementation
@@ -61,25 +63,33 @@ With prefix ARG, rotate that many positions."
   "Rotate buffers by STEPS positions."
   (let* ((all-windows (mjolnir--sort-windows-by-angle))
          (worthy-windows (seq-filter #'mjolnir-worthy-p all-windows))
-         (count (length worthy-windows)))
+         (count (length worthy-windows))
+         (state (mjolnir--get-state))
+         (current-window (selected-window)))
     (cond
      ((= count 0)
       (user-error "No worthy windows to rotate"))
      ((= count 1)
       (message "Only one worthy window - nothing to rotate"))
      (t
+      (unless (mjolnir--session-active-p
+               state 'rotate '(mjolnir-rotate-forward mjolnir-rotate-backward))
+        (mjolnir--start-session state 'rotate))
       ;; Save current state
-      (let ((state (mjolnir--get-state)))
-        (setf (mjolnir--state-rotation-snapshot state)
-              (mapcar (lambda (w) (cons w (window-buffer w)))
-                     worthy-windows)))
+      (setf (mjolnir--state-rotation-snapshot state)
+            (mapcar (lambda (w) (cons w (window-buffer w)))
+                    worthy-windows))
       ;; Perform rotation
       (mjolnir--perform-rotation worthy-windows steps)
+      (mjolnir--touch-session state steps)
       ;; Display feedback
       (mjolnir--display
        (list :action 'rotate
              :windows worthy-windows
              :count count
+             :steps (mjolnir--state-session-steps state)
+             :current-window current-window
+             :origin-window (mjolnir--state-session-origin-window state)
              :direction (if (> steps 0) 'forward 'backward)))))))
 
 (defun mjolnir--perform-rotation (windows steps)

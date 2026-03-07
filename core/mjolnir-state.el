@@ -28,6 +28,9 @@
 
 (require 'cl-lib)
 
+;; Declared for byte-compiler; defined in `mjolnir-buffers'.
+(defvar mjolnir-reset-timeout)
+
 ;;; State Structures
 
 (cl-defstruct mjolnir--state
@@ -36,9 +39,14 @@
   frame-cache
   worthy-windows
   last-command-time
+  session-kind
+  session-origin-buffer
+  session-origin-window
+  session-steps
   ;; Hidden realm (summoning)
   buffer-lru
   buffer-position
+  buffer-scope
   original-buffer
   ;; Visible realm (rotation)
   window-angles
@@ -68,6 +76,34 @@
   "Clear state for FRAME (default: current frame)."
   (let ((frame (or frame (selected-frame))))
     (set-frame-parameter frame 'mjolnir--state nil)))
+
+(defun mjolnir--session-expired-p (state)
+  "Return non-nil when STATE's repeated-command session has timed out."
+  (and mjolnir-reset-timeout
+       (mjolnir--state-last-command-time state)
+       (> (float-time (time-since (mjolnir--state-last-command-time state)))
+          mjolnir-reset-timeout)))
+
+(defun mjolnir--session-active-p (state kind commands)
+  "Return non-nil when STATE is in an active KIND session for COMMANDS."
+  (and (eq (mjolnir--state-session-kind state) kind)
+       (memq last-command commands)
+       (not (mjolnir--session-expired-p state))))
+
+(defun mjolnir--start-session (state kind)
+  "Start a KIND session in STATE from the current buffer and window."
+  (setf (mjolnir--state-session-kind state) kind
+        (mjolnir--state-session-origin-buffer state) (current-buffer)
+        (mjolnir--state-session-origin-window state) (selected-window)
+        (mjolnir--state-session-steps state) 0
+        (mjolnir--state-last-command-time state) (current-time)))
+
+(defun mjolnir--touch-session (state &optional delta)
+  "Advance STATE's session by DELTA steps and refresh its timestamp."
+  (setf (mjolnir--state-session-steps state)
+        (+ (or (mjolnir--state-session-steps state) 0)
+           (or delta 0))
+        (mjolnir--state-last-command-time state) (current-time)))
 
 ;;; Cache Management
 
@@ -136,13 +172,13 @@
 (defun mjolnir--state-setup ()
   "Set up state management hooks."
   (add-hook 'window-configuration-change-hook #'mjolnir--invalidate-caches)
-  (add-hook 'window-size-change-functions 
+  (add-hook 'window-size-change-functions
             (lambda (_) (mjolnir--invalidate-caches))))
 
 (defun mjolnir--state-teardown ()
   "Remove state management hooks."
   (remove-hook 'window-configuration-change-hook #'mjolnir--invalidate-caches)
-  (remove-hook 'window-size-change-functions 
+  (remove-hook 'window-size-change-functions
                (lambda (_) (mjolnir--invalidate-caches)))
   (mjolnir--invalidate-caches)
   (dolist (frame (frame-list))

@@ -29,6 +29,9 @@
 (require 'cl-lib)
 (require 'mjolnir-state)
 
+(declare-function project-current "project" (&optional maybe-prompt directory))
+(declare-function project-root "project" (project))
+
 ;;; Custom Variables - Filters
 
 (defcustom mjolnir-unworthy-modes
@@ -69,7 +72,7 @@ if the object should be considered unworthy."
 (defcustom mjolnir-summon-include-visible nil
   "Whether visible buffers can be summoned.
 nil - only summon hidden buffers
-t - include all buffers  
+t - include all buffers
 \\='other - exclude buffers visible on current frame"
   :type '(choice (const :tag "Hidden only" nil)
                  (const :tag "All buffers" t)
@@ -148,7 +151,7 @@ OBJECT can be a window or buffer."
   (cond
    ((windowp object)
     (mjolnir--window-worthy-p object))
-   ((bufferp object) 
+   ((bufferp object)
     (mjolnir--buffer-worthy-p object))
    (t (error "Invalid object type: %S" object))))
 
@@ -158,7 +161,7 @@ OBJECT can be a window or buffer."
        (>= (window-height window) mjolnir-minimum-window-height)
        (not (with-current-buffer (window-buffer window)
               (memq major-mode mjolnir-unworthy-modes)))
-       (not (run-hook-with-args-until-success 
+       (not (run-hook-with-args-until-success
              'mjolnir-worthy-predicates window))))
 
 (defun mjolnir--buffer-worthy-p (buffer)
@@ -186,7 +189,7 @@ OBJECT can be a window or buffer."
                  (or (not mjolnir-summon-project-only)
                      (mjolnir--buffer-in-project-p buffer)))
         (push buffer candidates)))
-    (nreverse candidates)))
+    (mjolnir--prioritize-summonable-buffers (nreverse candidates))))
 
 (defun mjolnir--all-visible-buffers ()
   "Get all visible buffers across all frames."
@@ -198,12 +201,31 @@ OBJECT can be a window or buffer."
 
 (defun mjolnir--buffer-in-project-p (buffer)
   "Return non-nil if BUFFER is in current project."
+  (let ((current-root (mjolnir--buffer-project-root (current-buffer))))
+    (and current-root
+         (string-prefix-p current-root
+                          (buffer-local-value 'default-directory buffer)))))
+
+(defun mjolnir--buffer-project-root (buffer)
+  "Return BUFFER's project root, or nil when unavailable."
   (when (fboundp 'project-current)
-    (let ((project-root (and (project-current)
-                            (project-root (project-current)))))
-      (when project-root
-        (string-prefix-p project-root
-                        (buffer-local-value 'default-directory buffer))))))
+    (with-current-buffer buffer
+      (let ((project (project-current)))
+        (when project
+          (project-root project))))))
+
+(defun mjolnir--prioritize-summonable-buffers (buffers)
+  "Prioritize BUFFERS so the current project stays near the front."
+  (let ((current-root (mjolnir--buffer-project-root (current-buffer)))
+        same-project
+        others)
+    (dolist (buffer buffers)
+      (if (and current-root
+               (equal current-root (mjolnir--buffer-project-root buffer)))
+          (push buffer same-project)
+        (push buffer others)))
+    (nconc (nreverse same-project)
+           (nreverse others))))
 
 ;;; User Commands
 
@@ -214,7 +236,7 @@ OBJECT can be a window or buffer."
   (let ((window (selected-window)))
     (if (memq window mjolnir--fixed-windows)
         (progn
-          (setq mjolnir--fixed-windows 
+          (setq mjolnir--fixed-windows
                 (delq window mjolnir--fixed-windows))
           (set-window-dedicated-p window nil)
           (message "⚡ Window is now worthy!"))

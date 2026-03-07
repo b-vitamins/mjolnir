@@ -29,6 +29,9 @@ Now wield the power of Mjölnir wherever you are (`*`).
 
 ### Visible Realm (Window Rotation)
 
+Each rotation briefly labels the worthy windows in geometric order, so the
+clockwise/counter-clockwise ring stays visible while you learn it.
+
 Go this way (`M-n`):
 
 ```
@@ -62,6 +65,8 @@ Make `X` unworthy (`M-u`), then go this way (`M-n`):
 ### Hidden Realm (Buffer Summoning)
 
 Summon buffers not visible in any window!
+Mjolnir starts with a tight recent ring, keeps the origin buffer marked in the
+echo area, and widens the ring automatically if you keep cycling.
 
 Summon next (`M-N`):
 
@@ -130,7 +135,7 @@ Limit buffer summoning to current project (requires Emacs 28+):
 ### Display Options
 
 ```emacs-lisp
-;; Choose display style
+;; Choose display style (default: 'both)
 (setq mjolnir-display-method 'both)  ; 'echo, 'overlays, or 'both
 
 ;; Customize echo area format
@@ -145,9 +150,10 @@ Limit buffer summoning to current project (requires Emacs 28+):
 ## Features
 
 - **Visible Realm**: Rotate buffers through visible windows
-- **Hidden Realm**: Summon buffers from the void
+- **Hidden Realm**: Summon buffers from the void with a stable recent ring
 - **Worthiness System**: Mark windows/buffers as worthy or unworthy
 - **Project Support**: Limit summoning to project buffers
+- **Geometric Rotation Map**: Brief window labels teach the rotation order
 - **Mode-line Indicators**: Visual feedback for window worthiness
 - **Smart Caching**: Lightning-fast performance
 - **Frame-local State**: Independent operation per frame

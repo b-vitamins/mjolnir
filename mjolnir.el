@@ -96,6 +96,9 @@
 
 (require 'cl-lib)
 
+(defvar mjolnir-mode)
+(declare-function mjolnir-transient "mjolnir-transient")
+
 ;; Load core modules (byte-compiled but not separately installed)
 (eval-and-compile
   (let ((mjolnir-dir (file-name-directory

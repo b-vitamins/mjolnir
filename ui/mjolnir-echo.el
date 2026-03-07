@@ -26,6 +26,7 @@
 
 ;;; Code:
 
+(require 'cl-lib)
 (require 'mjolnir-state)
 
 ;;; Custom Variables
@@ -55,13 +56,13 @@
   :type 'number
   :group 'mjolnir)
 
-(defcustom mjolnir-display-method 'echo
+(defcustom mjolnir-display-method 'both
   "Display method for Mjolnir feedback.
 \\='echo - show in echo area
 \\='overlays - show window numbers
 \\='both - show both"
   :type '(choice (const :tag "Echo area" echo)
-                 (const :tag "Overlays" overlays) 
+                 (const :tag "Overlays" overlays)
                  (const :tag "Both" both))
   :group 'mjolnir)
 
@@ -124,33 +125,53 @@ Theme authors should customize `highlight' to affect this face."
 (defun mjolnir--echo-rotation (info)
   "Display rotation feedback from INFO."
   (let ((count (plist-get info :count))
-        (direction (plist-get info :direction)))
-    (message "⚡ Rotated %d windows %s"
+        (direction (plist-get info :direction))
+        (steps (plist-get info :steps))
+        (windows (plist-get info :windows))
+        (current-window (plist-get info :current-window))
+        (origin-window (plist-get info :origin-window)))
+    (message "⚡ %s %d windows · %s · %s"
+             (if (eq direction 'forward) "Clockwise" "Counter-clockwise")
              count
-             (if (eq direction 'forward) "clockwise" "counter-clockwise"))))
+             (mjolnir--format-window-order windows current-window origin-window)
+             (mjolnir--format-session-steps steps))))
 
 (defun mjolnir--echo-summoning (info)
   "Display summoning feedback from INFO."
   (let* ((buffers (plist-get info :buffers))
+         (scope (plist-get info :scope))
          (position (plist-get info :position))
-         (names (mjolnir--format-buffer-list buffers position)))
+         (origin-buffer (plist-get info :origin-buffer))
+         (names (mjolnir--format-buffer-list buffers scope position origin-buffer)))
     (message "%s" names)))
 
-(defun mjolnir--format-buffer-list (buffers position)
-  "Format BUFFERS list with current at POSITION."
-  (let* ((window-width (window-width))
-         (names (mapcar (lambda (buf)
-                         (mjolnir--truncate-name (buffer-name buf)))
-                       buffers))
-         (visible (mjolnir--compute-visible-range 
-                  names position window-width)))
-    ;; Build display string
-    (mapconcat (lambda (idx)
-                 (let ((name (nth idx names)))
-                   (if (= idx position)
-                       (format mjolnir-echo-format-current name)
-                     (format mjolnir-echo-format-other name))))
-               visible " ")))
+(defun mjolnir--format-buffer-list (buffers scope position origin-buffer)
+  "Format BUFFERS within SCOPE, with current at POSITION and ORIGIN-BUFFER marked."
+  (let* ((active-buffers (cl-subseq buffers 0 scope))
+         (active-count (length active-buffers))
+         (slot-count (mjolnir--ring-slot-count active-count (window-width)))
+         (start (- position (floor (1- slot-count) 2)))
+         (entries nil))
+    (dotimes (offset slot-count)
+      (let* ((idx (mod (+ start offset) active-count))
+             (buffer (nth idx active-buffers))
+             (name (mjolnir--truncate-name (buffer-name buffer))))
+        (when (eq buffer origin-buffer)
+          (setq name (concat "*" name)))
+        (push (if (= idx position)
+                  (format mjolnir-echo-format-current name)
+                (format mjolnir-echo-format-other name))
+              entries)))
+    (setq entries (nreverse entries))
+    (concat
+     (if (> active-count slot-count) "... " "")
+     (mapconcat #'identity entries " ")
+     (cond
+      ((< scope (length buffers))
+       (format " ... +%d" (- (length buffers) scope)))
+      ((> active-count slot-count)
+       " ...")
+      (t "")))))
 
 (defun mjolnir--truncate-name (name)
   "Truncate NAME to fit echo area."
@@ -158,32 +179,31 @@ Theme authors should customize `highlight' to affect this face."
       name
     (concat (substring name 0 (- mjolnir-echo-max-length 1)) "…")))
 
-(defun mjolnir--compute-visible-range (names position max-width)
-  "Compute range of NAMES visible around POSITION within MAX-WIDTH."
-  (let ((start position)
-        (end position)
-        (current-width (+ 2 (length (nth position names))))
-        visible)
-    ;; Always include current
-    (push position visible)
-    ;; Expand range
-    (while (and (< current-width (- max-width 5))
-                (or (> start 0) (< end (1- (length names)))))
-      ;; Try right
-      (when (and (< end (1- (length names)))
-                 (let ((width (+ 3 (length (nth (1+ end) names)))))
-                   (< (+ current-width width) (- max-width 5))))
-        (cl-incf end)
-        (push end visible)
-        (cl-incf current-width (+ 3 (length (nth end names)))))
-      ;; Try left
-      (when (and (> start 0)
-                 (let ((width (+ 3 (length (nth (1- start) names)))))
-                   (< (+ current-width width) (- max-width 5))))
-        (cl-decf start)
-        (push start visible)
-        (cl-incf current-width (+ 3 (length (nth start names))))))
-    (sort visible #'<)))
+(defun mjolnir--ring-slot-count (count width)
+  "Return a stable display slot count for COUNT items within WIDTH."
+  (cond
+   ((<= count 1) count)
+   ((< width 55) (min count 3))
+   (t (min count 5))))
+
+(defun mjolnir--format-window-order (windows current-window origin-window)
+  "Format WINDOWS as a stable geometric order string.
+CURRENT-WINDOW is bracketed and ORIGIN-WINDOW is marked with `*'."
+  (let ((counter 1)
+        parts)
+    (dolist (window windows)
+      (let ((label (number-to-string counter)))
+        (when (eq window origin-window)
+          (setq label (concat "*" label)))
+        (when (eq window current-window)
+          (setq label (format "[%s]" label)))
+        (push label parts)
+        (cl-incf counter)))
+    (mapconcat #'identity (nreverse parts) " ")))
+
+(defun mjolnir--format-session-steps (steps)
+  "Format STEPS for echo display."
+  (format "%+d" (or steps 0)))
 
 (defun mjolnir--schedule-echo-clear ()
   "Schedule clearing of echo area."
@@ -209,19 +229,27 @@ Theme authors should customize `highlight' to affect this face."
   (let ((action (plist-get info :action))
         (windows (plist-get info :windows)))
     (when (and windows (memq action '(rotate preview)))
-      (mjolnir--show-window-numbers windows))))
+      (mjolnir--show-window-numbers info))))
 
-(defun mjolnir--show-window-numbers (windows)
-  "Show overlay numbers on WINDOWS."
+(defun mjolnir--show-window-numbers (info)
+  "Show overlay numbers derived from INFO."
   (mjolnir--clear-overlays)
-  (let ((counter 1))
+  (let ((windows (plist-get info :windows))
+        (current-window (plist-get info :current-window))
+        (origin-window (plist-get info :origin-window))
+        (counter 1))
     (dolist (window windows)
       (when (window-live-p window)
-        (let ((overlay (make-overlay 1 1 (window-buffer window))))
+        (let* ((label (number-to-string counter))
+               (overlay (make-overlay 1 1 (window-buffer window))))
+          (when (eq window origin-window)
+            (setq label (concat "*" label)))
+          (when (eq window current-window)
+            (setq label (format "[%s]" label)))
           (overlay-put overlay 'window window)
           (overlay-put overlay 'priority 1000)
           (overlay-put overlay 'before-string
-                       (propertize (format " %d " counter)
+                       (propertize (format " %s " label)
                                   'face 'mjolnir-preview-number))
           (push overlay mjolnir--preview-overlays)
           (cl-incf counter)))))

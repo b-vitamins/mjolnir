@@ -260,6 +260,48 @@
            (mjolnir-summon-next)
            (should (eq (current-buffer) first-buffer))))))))
 
+(ert-deftest mjolnir-test-summon-transition-behavior ()
+  "Test summon stepping and progressive widening."
+  (should (equal (mjolnir--summon-transition nil 1 3 6) '(3 . 0)))
+  (should (equal (mjolnir--summon-transition nil -1 3 6) '(3 . 2)))
+  (should (equal (mjolnir--summon-transition 2 1 3 6) '(6 . 3)))
+  (should (equal (mjolnir--summon-transition 0 -1 3 6) '(6 . 5))))
+
+(ert-deftest mjolnir-test-format-buffer-list-shows-origin-and-remaining ()
+  "Test stable summon ring formatting."
+  (mjolnir-test-with-temp-buffers '("alpha" "bravo" "charlie" "delta" "echo" "foxtrot")
+    (cl-letf (((symbol-function 'window-width)
+               (lambda (&optional _) 80)))
+      (let* ((buffers (mapcar #'get-buffer
+                              '("alpha" "bravo" "charlie" "delta" "echo" "foxtrot")))
+             (text (mjolnir--format-buffer-list buffers 4 1 (get-buffer "alpha"))))
+        (should (string-match-p "\\*alpha" text))
+        (should (string-match-p "\\[bravo\\]" text))
+        (should (string-match-p "\\+2" text))))))
+
+(ert-deftest mjolnir-test-format-window-order-marks-current-and-origin ()
+  "Test geometric order formatting."
+  (let ((w1 (cons 'window 1))
+        (w2 (cons 'window 2))
+        (w3 (cons 'window 3)))
+    (should (equal (mjolnir--format-window-order (list w1 w2 w3) w2 w1)
+                   "*1 [2] 3"))))
+
+(ert-deftest mjolnir-test-prioritize-summonable-buffers-keeps-project-first ()
+  "Test that current-project buffers are prioritized."
+  (mjolnir-test-with-temp-buffers '("current" "match" "other")
+    (cl-letf (((symbol-function 'mjolnir--buffer-project-root)
+               (lambda (buffer)
+                 (if (member (buffer-name buffer) '("current" "match"))
+                     "/tmp/project/"
+                   "/tmp/other/"))))
+      (with-current-buffer "current"
+        (let ((ordered (mjolnir--prioritize-summonable-buffers
+                        (list (get-buffer "other")
+                              (get-buffer "match")))))
+          (should (equal (mapcar #'buffer-name ordered)
+                         '("match" "other"))))))))
+
 ;;; State Management Tests
 
 (ert-deftest mjolnir-test-frame-local-state-isolation ()

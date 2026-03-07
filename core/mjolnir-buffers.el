@@ -28,10 +28,13 @@
 (require 'mjolnir-core)
 (require 'mjolnir-echo)
 
+(defconst mjolnir--summon-initial-scope 7
+  "How many hidden buffers to cycle before widening the summon ring.")
+
 ;;; Custom Variables
 
 (defcustom mjolnir-reset-timeout 2.0
-  "Seconds before resetting summoning position.
+  "Seconds before resetting repeated summon and rotation sequences.
 Set to nil to disable automatic reset."
   :type '(choice (const :tag "Never reset" nil)
                  number)
@@ -55,24 +58,48 @@ With prefix ARG, summon ARG buffers backward."
 
 ;;; Internal Implementation
 
+(defun mjolnir--summon-transition (old-pos steps scope count)
+  "Return the next summon state for OLD-POS, STEPS, SCOPE, and COUNT.
+The return value is a cons cell of (NEW-SCOPE . NEW-POS)."
+  (let* ((base-pos (if old-pos
+                       old-pos
+                     (if (> steps 0) -1 0)))
+         (raw-pos (+ base-pos steps))
+         (new-scope scope))
+    ;; Only widen once the user has already entered the active ring.
+    (when old-pos
+      (while (and (< new-scope count)
+                  (or (< raw-pos 0) (>= raw-pos new-scope)))
+        (setq new-scope (min count
+                             (+ new-scope mjolnir--summon-initial-scope)))))
+    (cons new-scope (mod raw-pos new-scope))))
+
 (defun mjolnir--summon-buffer (steps)
   "Summon buffer STEPS positions away."
   (let ((state (mjolnir--ensure-summon-state)))
     (when state
       (let* ((buffers (mjolnir--state-buffer-lru state))
              (count (length buffers))
-             (old-pos (mjolnir--state-buffer-position state))
-             (new-pos (mod (+ old-pos steps) count))
+             (scope (or (mjolnir--state-buffer-scope state) count))
+             (transition (mjolnir--summon-transition
+                          (mjolnir--state-buffer-position state)
+                          steps scope count))
+             (new-scope (car transition))
+             (new-pos (cdr transition))
              (buffer (nth new-pos buffers)))
         ;; Update state
         (setf (mjolnir--state-buffer-position state) new-pos
-              (mjolnir--state-last-command-time state) (current-time))
+              (mjolnir--state-buffer-scope state) new-scope)
+        (mjolnir--touch-session state steps)
         ;; Switch to buffer
         (switch-to-buffer buffer t)
         ;; Display feedback
         (mjolnir--display
          (list :action 'summon
                :buffers buffers
+               :scope new-scope
+               :origin-buffer (mjolnir--state-session-origin-buffer state)
+               :steps (mjolnir--state-session-steps state)
                :position new-pos
                :count count))))))
 
@@ -80,26 +107,25 @@ With prefix ARG, summon ARG buffers backward."
   "Ensure summoning state is initialized and valid."
   (let ((state (mjolnir--get-state)))
     (when (or (not (mjolnir--state-buffer-lru state))
-              (not (eq last-command 'mjolnir--summon))
-              (mjolnir--summon-timeout-p state))
+              (not (mjolnir--session-active-p state 'summon '(mjolnir--summon))))
       ;; Rebuild buffer list
       (let ((candidates (mjolnir--summonable-buffers)))
         (if (null candidates)
             (progn
               (message "No buffers to summon")
               (setq state nil))
+          (mjolnir--start-session state 'summon)
           (setf (mjolnir--state-buffer-lru state) candidates
-                (mjolnir--state-buffer-position state) 0
+                (mjolnir--state-buffer-position state) nil
+                (mjolnir--state-buffer-scope state)
+                (min (length candidates) mjolnir--summon-initial-scope)
                 (mjolnir--state-original-buffer state) (current-buffer)))))
     (setq this-command 'mjolnir--summon)
     state))
 
 (defun mjolnir--summon-timeout-p (state)
   "Check if summoning state has timed out."
-  (and mjolnir-reset-timeout
-       (mjolnir--state-last-command-time state)
-       (> (float-time (time-since (mjolnir--state-last-command-time state)))
-          mjolnir-reset-timeout)))
+  (mjolnir--session-expired-p state))
 
 (provide 'mjolnir-buffers)
 ;;; mjolnir-buffers.el ends here

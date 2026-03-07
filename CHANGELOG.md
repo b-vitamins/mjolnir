@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Report issues with the RC at: https://github.com/b-vitamins/mjolnir/issues
 ### Added
 - Helper macros for tests to create temporary buffers and handle frame failures
+### Changed
+- Hidden-buffer summoning now starts with a tighter recent ring, marks the
+  sequence origin in the echo area, and widens automatically as cycling
+  continues
+- Rotation feedback now defaults to echo plus overlays, showing the geometric
+  window order directly on screen during use
 ### Fixed
 - Byte compilation error when loading due to early use of `mjolnir-mode-map`
   and `mjolnir--define-key`
