@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-03-07
+### Changed
+- All loadable Emacs Lisp files now live under `lisp/`, which simplifies
+  downstream packaging and distribution
+- The project test entry point is now `make check` instead of `make test`
+- `mjolnir.el` no longer mutates `load-path` to discover internal modules
+
 ## [0.4.0] - 2026-03-07
 ### Added
 - Helper macros for tests to create temporary buffers and handle frame failures
@@ -113,7 +120,8 @@ The API is stable, but implementation details may change based on testing feedba
 - Cache system for performance
 - Global minor mode
 
-[Unreleased]: https://github.com/b-vitamins/mjolnir/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/b-vitamins/mjolnir/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/b-vitamins/mjolnir/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/b-vitamins/mjolnir/compare/v0.4.0-rc1...v0.4.0
 [0.4.0-rc1]: https://github.com/b-vitamins/mjolnir/compare/v0.3.0...v0.4.0-rc1
 [0.3.0]: https://github.com/b-vitamins/mjolnir/compare/v0.2.0...v0.3.0
