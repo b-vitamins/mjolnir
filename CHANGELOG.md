@@ -5,9 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-### Notes
-- v0.4.0 final release pending CI stabilization and testing feedback
-- Report issues with the RC at: https://github.com/b-vitamins/mjolnir/issues
+
+## [0.4.0] - 2026-03-07
 ### Added
 - Helper macros for tests to create temporary buffers and handle frame failures
 ### Changed
@@ -22,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Byte compilation error when loading due to early use of `mjolnir-mode-map`
   and `mjolnir--define-key`
 - Test suite no longer fails when terminal frames cannot be created
+- `make lint-package` now initializes installed packages in fresh batch
+  environments
+- GitHub Actions now tests supported Emacs versions without requiring the
+  optional `transient` package on Emacs 27.1
 
 ## [0.4.0-rc1] - 2025-06-11
 ### ⚠️ Release Candidate
@@ -110,7 +113,8 @@ The API is stable, but implementation details may change based on testing feedba
 - Cache system for performance
 - Global minor mode
 
-[Unreleased]: https://github.com/b-vitamins/mjolnir/compare/v0.4.0-rc1...HEAD
+[Unreleased]: https://github.com/b-vitamins/mjolnir/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/b-vitamins/mjolnir/compare/v0.4.0-rc1...v0.4.0
 [0.4.0-rc1]: https://github.com/b-vitamins/mjolnir/compare/v0.3.0...v0.4.0-rc1
 [0.3.0]: https://github.com/b-vitamins/mjolnir/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/b-vitamins/mjolnir/compare/v0.1.0...v0.2.0

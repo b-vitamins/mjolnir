@@ -4,7 +4,7 @@
 
 ;; Author: Ayan Das <bvits@riseup.net>
 ;; Maintainer: Ayan Das <bvits@riseup.net>
-;; Version: 0.4.0-rc1
+;; Version: 0.4.0
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: buffers, windows, convenience
 ;; URL: https://github.com/b-vitamins/mjolnir
@@ -32,7 +32,7 @@
 ;;
 ;; *May your windows be ever steadfast and your code mighty!* ⚡
 ;;
-;; Works with Emacs 25.1 and later. Full power unleashed with Emacs 29+!
+;; Works with Emacs 27.1 and later. Full power unleashed with Emacs 29+!
 ;;; Installation:
 ;; Clone this repository and add it to your `load-path`.
 ;;
