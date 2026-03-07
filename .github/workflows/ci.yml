@@ -19,26 +19,29 @@ jobs:
       with:
         version: ${{ matrix.emacs_version }}
 
-    - name: Install dependencies
-      run: |
-        emacs -Q --batch \
-          --eval "(require 'package)" \
-          --eval "(add-to-list 'package-archives '(\"melpa\" . \"https://melpa.org/packages/\"))" \
-          --eval "(package-refresh-contents)" \
-          --eval "(package-install 'transient)"
-
     - name: Compile
       run: make compile
 
     - name: Run tests
       run: make test
 
-    - name: Run linters
-      if: matrix.emacs_version == '29.4'
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: purcell/setup-emacs@master
+      with:
+        version: 29.4
+
+    - name: Install package-lint
       run: |
         emacs -Q --batch \
           --eval "(require 'package)" \
           --eval "(add-to-list 'package-archives '(\"melpa\" . \"https://melpa.org/packages/\"))" \
           --eval "(package-refresh-contents)" \
           --eval "(package-install 'package-lint)"
+
+    - name: Run linters
+      run: |
         make lint-package
