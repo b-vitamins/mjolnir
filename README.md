@@ -138,14 +138,18 @@ Limit buffer summoning to current project (requires Emacs 28+):
 ;; Choose display style (default: 'both)
 (setq mjolnir-display-method 'both)  ; 'echo, 'overlays, or 'both
 
-;; Customize echo area format
-(setq mjolnir-echo-format-current "[%s]"
+;; Customize the theme-aware echo rail labels
+(setq mjolnir-echo-format-current "%s"
       mjolnir-echo-format-other "%s")
 
 ;; Mode-line indicators
 (setq mjolnir-worthy-indicator " ⚡"
       mjolnir-unworthy-indicator " ⚔")
 ```
+
+The echo area now uses a fixed-width rail with theme-aware faces, subtle
+origin markers, and stable spacing so repeated `M-n`/`M-p`/`M-N`/`M-P`
+presses stay easy to read.
 
 ## Features
 
@@ -154,6 +158,7 @@ Limit buffer summoning to current project (requires Emacs 28+):
 - **Worthiness System**: Mark windows/buffers as worthy or unworthy
 - **Project Support**: Limit summoning to project buffers
 - **Geometric Rotation Map**: Brief window labels teach the rotation order
+- **Polished Echo Rail**: Theme-aware, fixed-width train UI for repeated cycling
 - **Mode-line Indicators**: Visual feedback for window worthiness
 - **Smart Caching**: Lightning-fast performance
 - **Frame-local State**: Independent operation per frame

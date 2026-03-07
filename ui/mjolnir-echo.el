@@ -31,13 +31,13 @@
 
 ;;; Custom Variables
 
-(defcustom mjolnir-echo-format-current "[%s]"
-  "Format string for current buffer in echo area."
+(defcustom mjolnir-echo-format-current "%s"
+  "Format string for the current label before rail styling."
   :type 'string
   :group 'mjolnir)
 
 (defcustom mjolnir-echo-format-other "%s"
-  "Format string for other buffers in echo area."
+  "Format string for non-current labels before rail styling."
   :type 'string
   :group 'mjolnir)
 
@@ -67,6 +67,50 @@
   :group 'mjolnir)
 
 ;;; Faces
+
+(defface mjolnir-echo-rail
+  '((t :inherit shadow))
+  "Base face for the echo-area rail."
+  :group 'mjolnir)
+
+(defface mjolnir-echo-current
+  '((t :inherit highlight
+       :weight bold))
+  "Face for the current slot in the echo-area rail."
+  :group 'mjolnir)
+
+(defface mjolnir-echo-adjacent
+  '((t :weight bold))
+  "Face for slots adjacent to the current one."
+  :group 'mjolnir)
+
+(defface mjolnir-echo-distant
+  '((t :inherit shadow))
+  "Face for distant slots in the echo-area rail."
+  :group 'mjolnir)
+
+(defface mjolnir-echo-origin
+  '((t :inherit font-lock-keyword-face
+       :weight bold))
+  "Face for origin markers in the echo-area rail."
+  :group 'mjolnir)
+
+(defface mjolnir-echo-separator
+  '((t :inherit shadow))
+  "Face for separators and rail caps in the echo-area rail."
+  :group 'mjolnir)
+
+(defface mjolnir-echo-meta
+  '((t :inherit shadow
+       :slant italic))
+  "Face for subtle metadata around the echo-area rail."
+  :group 'mjolnir)
+
+(defface mjolnir-echo-overflow
+  '((t :inherit shadow
+       :weight bold))
+  "Face for overflow and continuation hints in the echo-area rail."
+  :group 'mjolnir)
 
 (defface mjolnir-preview-number
   '((t :weight bold
@@ -118,60 +162,51 @@ Theme authors should customize `highlight' to affect this face."
     (pcase action
       ('rotate (mjolnir--echo-rotation info))
       ('summon (mjolnir--echo-summoning info))
-      ('preview (message "⚡ Window rotation order"))
-      (_ (message "Mjolnir: %s" action))))
+      ('preview (mjolnir--echo-preview info))
+      (_ (mjolnir--echo-message (format "Mjolnir: %s" action)))))
   (mjolnir--schedule-echo-clear))
 
 (defun mjolnir--echo-rotation (info)
   "Display rotation feedback from INFO."
-  (let ((count (plist-get info :count))
-        (direction (plist-get info :direction))
+  (let ((direction (plist-get info :direction))
         (steps (plist-get info :steps))
         (windows (plist-get info :windows))
         (current-window (plist-get info :current-window))
         (origin-window (plist-get info :origin-window)))
-    (message "⚡ %s %d windows · %s · %s"
-             (if (eq direction 'forward) "Clockwise" "Counter-clockwise")
-             count
-             (mjolnir--format-window-order windows current-window origin-window)
-             (mjolnir--format-session-steps steps))))
+    (mjolnir--echo-message
+     (mjolnir--format-window-order
+      windows current-window origin-window
+      (mjolnir--echo-meta-string
+       (if (eq direction 'forward) "CW" "CCW"))
+      (mjolnir--echo-meta-string (format "%+d" (or steps 0)))))))
 
 (defun mjolnir--echo-summoning (info)
   "Display summoning feedback from INFO."
   (let* ((buffers (plist-get info :buffers))
          (scope (plist-get info :scope))
          (position (plist-get info :position))
-         (origin-buffer (plist-get info :origin-buffer))
-         (names (mjolnir--format-buffer-list buffers scope position origin-buffer)))
-    (message "%s" names)))
+         (origin-buffer (plist-get info :origin-buffer)))
+    (mjolnir--echo-message
+     (mjolnir--format-buffer-list buffers scope position origin-buffer))))
 
 (defun mjolnir--format-buffer-list (buffers scope position origin-buffer)
-  "Format BUFFERS within SCOPE, with current at POSITION and ORIGIN-BUFFER marked."
+  "Format BUFFERS within SCOPE as a polished rail.
+POSITION is highlighted and ORIGIN-BUFFER is tracked."
   (let* ((active-buffers (cl-subseq buffers 0 scope))
-         (active-count (length active-buffers))
-         (slot-count (mjolnir--ring-slot-count active-count (window-width)))
-         (start (- position (floor (1- slot-count) 2)))
-         (entries nil))
-    (dotimes (offset slot-count)
-      (let* ((idx (mod (+ start offset) active-count))
-             (buffer (nth idx active-buffers))
-             (name (mjolnir--truncate-name (buffer-name buffer))))
-        (when (eq buffer origin-buffer)
-          (setq name (concat "*" name)))
-        (push (if (= idx position)
-                  (format mjolnir-echo-format-current name)
-                (format mjolnir-echo-format-other name))
-              entries)))
-    (setq entries (nreverse entries))
-    (concat
-     (if (> active-count slot-count) "... " "")
-     (mapconcat #'identity entries " ")
-     (cond
-      ((< scope (length buffers))
-       (format " ... +%d" (- (length buffers) scope)))
-      ((> active-count slot-count)
-       " ...")
-      (t "")))))
+         (origin-index (cl-position origin-buffer active-buffers))
+         (prefix (unless origin-index
+                   (mjolnir--format-origin-prefix origin-buffer)))
+         (suffix (when (< scope (length buffers))
+                   (mjolnir--echo-overflow-string
+                    (format "+%d" (- (length buffers) scope))))))
+    (mjolnir--render-rail
+     (mapcar (lambda (buffer)
+               (buffer-name buffer))
+             active-buffers)
+     position
+     origin-index
+     prefix
+     suffix)))
 
 (defun mjolnir--truncate-name (name)
   "Truncate NAME to fit echo area."
@@ -179,31 +214,212 @@ Theme authors should customize `highlight' to affect this face."
       name
     (concat (substring name 0 (- mjolnir-echo-max-length 1)) "…")))
 
-(defun mjolnir--ring-slot-count (count width)
-  "Return a stable display slot count for COUNT items within WIDTH."
+(defun mjolnir--echo-preview (info)
+  "Display preview feedback from INFO."
+  (let ((windows (plist-get info :windows))
+        (current-window (plist-get info :current-window))
+        (origin-window (plist-get info :origin-window)))
+    (mjolnir--echo-message
+     (mjolnir--format-window-order
+      windows current-window origin-window
+      (mjolnir--echo-meta-string "MAP")
+      nil))))
+
+(defun mjolnir--format-window-order (windows current-window origin-window
+                                             &optional prefix suffix)
+  "Format WINDOWS as a polished rail.
+CURRENT-WINDOW is highlighted and ORIGIN-WINDOW is marked in the rail.
+Optional PREFIX and SUFFIX strings are placed around the rail."
+  (let ((current-index (or (cl-position current-window windows) 0))
+        (origin-index (cl-position origin-window windows)))
+    (mjolnir--render-rail
+     (mapcar (lambda (window)
+               (buffer-name (window-buffer window)))
+             windows)
+     current-index
+     origin-index
+     prefix
+     suffix)))
+
+(defun mjolnir--echo-message (text)
+  "Show TEXT in the echo area without writing it to `*Messages*'."
+  (let ((message-log-max nil))
+    (message "%s" text)))
+
+(defun mjolnir--echo-meta-string (text)
+  "Return TEXT styled as echo-area metadata."
+  (propertize text 'face 'mjolnir-echo-meta))
+
+(defun mjolnir--echo-overflow-string (text)
+  "Return TEXT styled as an overflow hint."
+  (propertize text 'face 'mjolnir-echo-overflow))
+
+(defun mjolnir--format-origin-prefix (buffer)
+  "Return a styled origin prefix for BUFFER."
+  (let* ((label (mjolnir--truncate-width (buffer-name buffer) 12))
+         (text (mjolnir--echo-meta-string
+                (format "%s %s" (mjolnir--glyph 'origin) label))))
+    (add-face-text-property 0 1 'mjolnir-echo-origin t text)
+    text))
+
+(defun mjolnir--glyph (kind)
+  "Return a polished glyph for KIND with a terminal-safe fallback."
+  (pcase kind
+    ('rail-left (if (char-displayable-p ?‹) "‹" "<"))
+    ('rail-right (if (char-displayable-p ?›) "›" ">"))
+    ('current-left (if (char-displayable-p ?⟨) "⟨" "["))
+    ('current-right (if (char-displayable-p ?⟩) "⟩" "]"))
+    ('separator (if (char-displayable-p ?┆) "┆" "|"))
+    ('origin (if (char-displayable-p ?◆) "◆" "*"))
+    ('ellipsis (if (char-displayable-p ?…) "…" "."))))
+
+(defun mjolnir--truncate-width (text width)
+  "Truncate TEXT to WIDTH columns without padding."
+  (if (<= (string-width text) width)
+      text
+    (if (<= width 1)
+        (truncate-string-to-width text width)
+      (concat (truncate-string-to-width text (1- width))
+              (mjolnir--glyph 'ellipsis)))))
+
+(defun mjolnir--fit-string (text width)
+  "Fit TEXT into WIDTH columns with right padding."
+  (let* ((truncated (mjolnir--truncate-width text width))
+         (padding (- width (string-width truncated))))
+    (if (> padding 0)
+        (concat truncated (make-string padding ? ))
+      truncated)))
+
+(defun mjolnir--rail-layout (count width prefix suffix)
+  "Return a cons of (SLOT-COUNT . SLOT-WIDTH) for COUNT items in WIDTH.
+PREFIX and SUFFIX are optional styled strings around the rail."
+  (let ((slot-count (min count
+                         (cond
+                          ((>= width 96) 5)
+                          ((>= width 68) 3)
+                          (t 1))))
+        slot-width)
+    (while
+        (progn
+          (setq slot-width
+                (mjolnir--rail-slot-width slot-count width prefix suffix))
+          (and (> slot-count 1)
+               (< slot-width 8)))
+      (setq slot-count (if (> slot-count 3) 3 1)))
+    (cons slot-count (max 4 slot-width))))
+
+(defun mjolnir--rail-slot-width (slot-count width prefix suffix)
+  "Compute slot width for SLOT-COUNT items within WIDTH.
+PREFIX and SUFFIX are optional styled strings around the rail."
+  (let* ((base-width (+ 4
+                        (* (max 0 (1- slot-count)) 3)
+                        (if prefix (+ 2 (string-width prefix)) 0)
+                        (if suffix (+ 2 (string-width suffix)) 0)))
+         (available (max 4 (- width base-width))))
+    (min mjolnir-echo-max-length
+         (max 4 (/ available (max slot-count 1))))))
+
+(defun mjolnir--visible-ring-indices (count current-index slot-count)
+  "Return SLOT-COUNT indices around CURRENT-INDEX within COUNT items."
+  (let ((start (- current-index (floor (1- slot-count) 2)))
+        indices)
+    (dotimes (offset slot-count)
+      (push (mod (+ start offset) count) indices))
+    (nreverse indices)))
+
+(defun mjolnir--ring-distance (count a b)
+  "Return the shortest ring distance between A and B within COUNT items."
+  (let ((delta (abs (- a b))))
+    (min delta (- count delta))))
+
+(defun mjolnir--slot-face (distance currentp)
+  "Return the appropriate rail face for DISTANCE from current.
+CURRENTP selects the highlighted current face."
   (cond
-   ((<= count 1) count)
-   ((< width 55) (min count 3))
-   (t (min count 5))))
+   (currentp 'mjolnir-echo-current)
+   ((<= distance 1) 'mjolnir-echo-adjacent)
+   (t 'mjolnir-echo-distant)))
 
-(defun mjolnir--format-window-order (windows current-window origin-window)
-  "Format WINDOWS as a stable geometric order string.
-CURRENT-WINDOW is bracketed and ORIGIN-WINDOW is marked with `*'."
-  (let ((counter 1)
-        parts)
-    (dolist (window windows)
-      (let ((label (number-to-string counter)))
-        (when (eq window origin-window)
-          (setq label (concat "*" label)))
-        (when (eq window current-window)
-          (setq label (format "[%s]" label)))
-        (push label parts)
-        (cl-incf counter)))
-    (mapconcat #'identity (nreverse parts) " ")))
+(defun mjolnir--render-slot (label width currentp distance originp)
+  "Render LABEL inside a fixed WIDTH rail slot.
+CURRENTP highlights the slot, DISTANCE tunes emphasis, and ORIGINP marks it."
+  (let* ((format-string (if currentp
+                            mjolnir-echo-format-current
+                          mjolnir-echo-format-other))
+         (marker-width (if (> width 8) 2 1))
+         (inner-width (max 1 (- width (if currentp 2 0))))
+         (marker-width (min marker-width (max 0 (1- inner-width))))
+         (marker (if (> marker-width 0)
+                     (if originp
+                         (concat (mjolnir--glyph 'origin)
+                                 (if (> marker-width 1) " " ""))
+                       (make-string marker-width ? ))
+                   ""))
+         (text-width (max 1 (- inner-width marker-width)))
+         (formatted (format format-string label))
+         (inner (concat marker (mjolnir--fit-string formatted text-width)))
+         (slot (if currentp
+                   (concat (mjolnir--glyph 'current-left)
+                           (mjolnir--fit-string inner inner-width)
+                           (mjolnir--glyph 'current-right))
+                 (mjolnir--fit-string inner inner-width)))
+         (face (mjolnir--slot-face distance currentp))
+         (marker-start (if currentp 1 0)))
+    (setq slot (propertize slot 'face face))
+    (when originp
+      (add-face-text-property marker-start
+                              (min (length slot) (1+ marker-start))
+                              'mjolnir-echo-origin
+                              t
+                              slot))
+    slot))
 
-(defun mjolnir--format-session-steps (steps)
-  "Format STEPS for echo display."
-  (format "%+d" (or steps 0)))
+(defun mjolnir--render-rail (labels current-index origin-index
+                                    &optional prefix suffix)
+  "Render LABELS as a fixed-width rail around CURRENT-INDEX.
+ORIGIN-INDEX marks an origin slot.
+PREFIX and SUFFIX are optional styled strings rendered outside the rail."
+  (let* ((count (length labels))
+         (layout (mjolnir--rail-layout count
+                                       (window-width (minibuffer-window))
+                                       prefix
+                                       suffix))
+         (slot-count (car layout))
+         (slot-width (cdr layout))
+         (indices (mjolnir--visible-ring-indices count current-index slot-count))
+         (continuationp (> count slot-count))
+         (separator (propertize
+                     (format " %s " (mjolnir--glyph 'separator))
+                     'face 'mjolnir-echo-separator))
+         (rail (concat
+                (propertize (mjolnir--glyph 'rail-left)
+                            'face (if continuationp
+                                      'mjolnir-echo-overflow
+                                    'mjolnir-echo-separator))
+                " "
+                (mapconcat
+                 (lambda (idx)
+                   (mjolnir--render-slot
+                    (nth idx labels)
+                    slot-width
+                    (= idx current-index)
+                    (mjolnir--ring-distance count idx current-index)
+                    (and origin-index (= idx origin-index))))
+                 indices
+                 separator)
+                " "
+                (propertize (mjolnir--glyph 'rail-right)
+                            'face (if continuationp
+                                      'mjolnir-echo-overflow
+                                    'mjolnir-echo-separator)))))
+    (concat
+     (if prefix
+         (concat prefix (propertize "  " 'face 'mjolnir-echo-meta))
+       "")
+     rail
+     (if suffix
+         (concat (propertize "  " 'face 'mjolnir-echo-meta) suffix)
+       ""))))
 
 (defun mjolnir--schedule-echo-clear ()
   "Schedule clearing of echo area."

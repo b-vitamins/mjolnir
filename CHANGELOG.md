@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   continues
 - Rotation feedback now defaults to echo plus overlays, showing the geometric
   window order directly on screen during use
+- Echo-area feedback now uses a fixed-width, theme-aware rail so repeated
+  cycling stays visually stable and more legible
 ### Fixed
 - Byte compilation error when loading due to early use of `mjolnir-mode-map`
   and `mjolnir--define-key`

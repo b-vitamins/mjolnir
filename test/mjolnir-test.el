@@ -275,17 +275,49 @@
       (let* ((buffers (mapcar #'get-buffer
                               '("alpha" "bravo" "charlie" "delta" "echo" "foxtrot")))
              (text (mjolnir--format-buffer-list buffers 4 1 (get-buffer "alpha"))))
-        (should (string-match-p "\\*alpha" text))
-        (should (string-match-p "\\[bravo\\]" text))
-        (should (string-match-p "\\+2" text))))))
+        (should (string-match-p (regexp-quote (mjolnir--glyph 'origin))
+                                (substring-no-properties text)))
+        (should (string-match-p
+                 (format "%s.*bravo.*%s"
+                         (regexp-quote (mjolnir--glyph 'current-left))
+                         (regexp-quote (mjolnir--glyph 'current-right)))
+                 (substring-no-properties text)))
+        (should (string-match-p "\\+2" (substring-no-properties text)))
+        (should (text-property-any 0 (length text) 'face 'mjolnir-echo-current text))))))
 
 (ert-deftest mjolnir-test-format-window-order-marks-current-and-origin ()
   "Test geometric order formatting."
-  (let ((w1 (cons 'window 1))
-        (w2 (cons 'window 2))
-        (w3 (cons 'window 3)))
-    (should (equal (mjolnir--format-window-order (list w1 w2 w3) w2 w1)
-                   "*1 [2] 3"))))
+  (mjolnir-test-with-temp-buffers '("alpha" "bravo" "charlie")
+    (cl-letf (((symbol-function 'window-width)
+               (lambda (&optional _) 80))
+              ((symbol-function 'window-buffer)
+               (lambda (window)
+                 (pcase window
+                   ('w1 (get-buffer "alpha"))
+                   ('w2 (get-buffer "bravo"))
+                   ('w3 (get-buffer "charlie"))))))
+      (let* ((text (mjolnir--format-window-order '(w1 w2 w3)
+                                                 'w2
+                                                 'w1
+                                                 (mjolnir--echo-meta-string "CW")
+                                                 (mjolnir--echo-meta-string "+1")))
+             (plain (substring-no-properties text)))
+        (should (string-match-p "^CW" plain))
+        (should (string-match-p (regexp-quote (mjolnir--glyph 'origin)) plain))
+        (should (string-match-p
+                 (format "%s.*bravo.*%s"
+                         (regexp-quote (mjolnir--glyph 'current-left))
+                         (regexp-quote (mjolnir--glyph 'current-right)))
+                 plain))
+        (should (string-match-p "\\+1$" plain))))))
+
+(ert-deftest mjolnir-test-render-rail-keeps-stable-width ()
+  "Test that the polished rail keeps a stable width for a fixed layout."
+  (cl-letf (((symbol-function 'window-width)
+             (lambda (&optional _) 80)))
+    (let ((short (mjolnir--render-rail '("a" "bb" "ccc") 1 0 nil nil))
+          (long (mjolnir--render-rail '("alpha" "bravo" "charlie") 1 0 nil nil)))
+      (should (= (string-width short) (string-width long))))))
 
 (ert-deftest mjolnir-test-prioritize-summonable-buffers-keeps-project-first ()
   "Test that current-project buffers are prioritized."
