@@ -31,7 +31,7 @@
 ;;; Transient Definition
 
 (when (featurep 'transient)
-  
+
   ;;;###autoload
   (transient-define-prefix mjolnir-transient ()
     "⚡ Mjolnir - Lightning-fast buffer control"
@@ -41,7 +41,7 @@
      ("p" "← Backward" mjolnir-rotate-backward :transient t)
      ("v" "Preview order" mjolnir-preview-rotation)]
     ["Hidden Realm - Summon"
-     :class transient-row  
+     :class transient-row
      ("N" "↓ Next" mjolnir-summon-next :transient t)
      ("P" "↑ Previous" mjolnir-summon-previous :transient t)]
     ["Control"
@@ -51,17 +51,17 @@
      ("j" "Toggle project limit" mjolnir-toggle-project-limit)]
     ["Display"
      :class transient-row
-     ("de" "Echo area" 
-      (lambda () (interactive) 
+     ("de" "Echo area"
+      (lambda () (interactive)
         (setq mjolnir-display-method 'echo)
         (message "Display: echo area"))
       :transient t)
-     ("do" "Overlays" 
+     ("do" "Overlays"
       (lambda () (interactive)
         (setq mjolnir-display-method 'overlays)
         (message "Display: overlays"))
       :transient t)
-     ("db" "Both" 
+     ("db" "Both"
       (lambda () (interactive)
         (setq mjolnir-display-method 'both)
         (message "Display: both"))

@@ -14,11 +14,11 @@ jobs:
         emacs_version: [27.1, 28.2, 29.4, snapshot]
     steps:
     - uses: actions/checkout@v4
-    
+
     - uses: purcell/setup-emacs@master
       with:
         version: ${{ matrix.emacs_version }}
-    
+
     - name: Install dependencies
       run: |
         emacs -Q --batch \
@@ -26,13 +26,13 @@ jobs:
           --eval "(add-to-list 'package-archives '(\"melpa\" . \"https://melpa.org/packages/\"))" \
           --eval "(package-refresh-contents)" \
           --eval "(package-install 'transient)"
-    
+
     - name: Compile
       run: make compile
-    
+
     - name: Run tests
       run: make test
-    
+
     - name: Run linters
       if: matrix.emacs_version == '29.4'
       run: |
