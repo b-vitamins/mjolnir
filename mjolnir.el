@@ -1,4 +1,4 @@
-;;; mjolnir.el --- Whosoever holds this hammer, if he be worthy, shall possess the power of Thor. -*- lexical-binding: t; -*-
+;;; mjolnir.el --- Geometric buffer cycling -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2025 Ayan Das
 

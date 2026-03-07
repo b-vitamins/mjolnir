@@ -29,5 +29,7 @@ test: compile
 
 lint-package:
 	$(BATCH) \
+	  --eval "(require 'package)" \
+	  --eval "(package-initialize)" \
 	  -l package-lint \
 	  -f package-lint-batch-and-exit mjolnir.el
