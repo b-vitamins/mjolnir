@@ -53,3 +53,4 @@ tags
 # Development
 /sandbox/
 /tmp/
+.stignore
