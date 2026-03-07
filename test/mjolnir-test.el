@@ -10,10 +10,7 @@
 
 ;; Load all mjolnir components
 (let ((test-dir (file-name-directory (or load-file-name buffer-file-name))))
-  (add-to-list 'load-path (expand-file-name ".." test-dir))
-  (add-to-list 'load-path (expand-file-name "../core" test-dir))
-  (add-to-list 'load-path (expand-file-name "../features" test-dir))
-  (add-to-list 'load-path (expand-file-name "../ui" test-dir)))
+  (add-to-list 'load-path (expand-file-name "../lisp" test-dir)))
 
 (require 'mjolnir)
 

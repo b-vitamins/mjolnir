@@ -13,7 +13,7 @@ When wielding Mjölnir, nothing shall come in the way of your buffers as they th
 Clone this repository and add it to your `load-path`.
 
 ```emacs-lisp
-(add-to-list 'load-path "/path/to/mjolnir")
+(add-to-list 'load-path "/path/to/mjolnir/lisp")
 (require 'mjolnir)
 ```
 

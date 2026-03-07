@@ -23,7 +23,7 @@ jobs:
       run: make compile
 
     - name: Run tests
-      run: make test
+      run: make check
 
   lint:
     runs-on: ubuntu-latest

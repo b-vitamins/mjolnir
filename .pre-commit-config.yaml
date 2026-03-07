@@ -9,6 +9,7 @@ repos:
     hooks:
       - id: elisp-byte-compile
         name: elisp byte compile
-        entry: emacs --batch -Q -L . -f batch-byte-compile mjolnir.el
+        entry: make compile
         language: system
-        files: ^mjolnir\.el$
+        pass_filenames: false
+        files: ^lisp/.*\.el$

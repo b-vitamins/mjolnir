@@ -1,19 +1,15 @@
 EMACS ?= emacs
-BATCH = $(EMACS) -Q --batch -L . -L core -L features -L ui
+BATCH = $(EMACS) -Q --batch -L lisp
 
 # Source files
-EL_SOURCES = mjolnir.el
-CORE_SOURCES = $(wildcard core/*.el)
-FEATURE_SOURCES = $(wildcard features/*.el)
-UI_SOURCES = $(wildcard ui/*.el)
-ALL_SOURCES = $(EL_SOURCES) $(CORE_SOURCES) $(FEATURE_SOURCES) $(UI_SOURCES)
+ALL_SOURCES = $(wildcard lisp/*.el)
 
 # Byte-compiled files
 ELC_FILES = $(ALL_SOURCES:.el=.elc)
 
-.PHONY: all clean compile test lint-package
+.PHONY: all clean compile check lint-package
 
-all: compile test
+all: compile check
 
 clean:
 	rm -f $(ELC_FILES)
@@ -21,7 +17,7 @@ clean:
 compile: clean
 	$(BATCH) -f batch-byte-compile $(ALL_SOURCES)
 
-test: compile
+check: compile
 	$(BATCH) \
 	  -l ert \
 	  -l test/mjolnir-test.el \
@@ -32,4 +28,4 @@ lint-package:
 	  --eval "(require 'package)" \
 	  --eval "(package-initialize)" \
 	  -l package-lint \
-	  -f package-lint-batch-and-exit mjolnir.el
+	  -f package-lint-batch-and-exit lisp/mjolnir.el

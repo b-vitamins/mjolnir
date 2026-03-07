@@ -31,7 +31,7 @@ fi
 pre-commit install --install-hooks --config .pre-commit-config.yaml
 
 # Byte compile to verify the package builds
-emacs --batch -Q -L . -f batch-byte-compile mjolnir.el
+make compile
 
 cat <<'MSG'
 Development environment setup complete.

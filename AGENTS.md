@@ -35,7 +35,7 @@ this repository.
   - `trailing-whitespace`
   - `end-of-file-fixer`
   - `check-added-large-files`
-  - `elisp byte compile` which runs `emacs --batch -Q -L . -f batch-byte-compile mjolnir.el`.
+  - `elisp byte compile` which runs `make compile`.
 - Run `pre-commit run --all-files` before committing.
 
 ## Version Management
@@ -58,5 +58,5 @@ this repository.
 - Keep function docstrings current.
 
 ## Project-Specific Guidelines
-- Require Emacs 25.1 or newer.
-- Byte compile `mjolnir.el` as part of pre-commit.
+- Require Emacs 27.1 or newer.
+- Byte compile the files under `lisp/` as part of pre-commit.
